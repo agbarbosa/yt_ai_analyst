@@ -1,9 +1,19 @@
-# YouTube Channel AI Analyst API
+# YouTube Channel AI Analyst
 
-A Node.js backend API that analyzes YouTube channels by fetching comprehensive data about all videos including titles, descriptions, tags, timestamps, and view counts.
+A comprehensive Node.js application that analyzes YouTube channels for SEO insights. Features both a powerful REST API and an interactive web dashboard for analyzing video performance, tags, keywords, and engagement metrics.
 
 ## Features
 
+### Web Dashboard (SEO Tool)
+- 🎯 **Interactive Web UI** - Beautiful, responsive dashboard for channel analysis
+- 📊 **SEO Insights** - Keyword analysis, tag frequency, and title optimization
+- 📈 **Performance Metrics** - Track views, likes, comments, and engagement rates
+- 🔍 **Advanced Filtering** - Search and filter videos, tags, and keywords
+- 📉 **Data Visualization** - Charts and metrics for publishing patterns
+- 💾 **CSV Export** - Download complete channel data for offline analysis
+- 🏆 **Top Performers** - Identify best-performing videos and content patterns
+
+### REST API
 - 🎥 Fetch all videos from a YouTube channel
 - 📊 Get detailed statistics (views, likes, comments)
 - 🏷️ Extract video tags and metadata
@@ -66,7 +76,50 @@ Production mode:
 npm start
 ```
 
-The API will be available at `http://localhost:3000`
+The application will be available at:
+- **Web Dashboard**: `http://localhost:3000`
+- **API**: `http://localhost:3000/api`
+- **Health Check**: `http://localhost:3000/health`
+
+## Using the Web Dashboard
+
+1. Open your browser and navigate to `http://localhost:3000`
+2. Enter a YouTube channel URL in any of these formats:
+   - `https://www.youtube.com/@username`
+   - `https://www.youtube.com/channel/UCxxxxx`
+   - `https://www.youtube.com/c/channelname`
+   - `https://www.youtube.com/user/username`
+3. Select the maximum number of videos to analyze (10-200)
+4. Click "Analyze Channel"
+
+### Dashboard Features
+
+**Overview Tab:**
+- Channel statistics (subscribers, total views, video count)
+- Top 5 performing videos
+- Engagement metrics (average views, engagement rate)
+- Most common tags
+- Publishing frequency analysis
+
+**Keywords & Tags Tab:**
+- Complete tag analysis with frequency counts
+- Filter tags by search term and minimum frequency
+- Title keyword extraction (identifies most used words in video titles)
+- SEO optimization insights
+
+**Performance Tab:**
+- Sortable table of all videos by:
+  - Views
+  - Likes
+  - Comments
+  - Engagement Rate
+  - Publication Date
+- Detailed metrics for each video
+
+**All Videos Tab:**
+- Searchable table of all analyzed videos
+- Complete video information (title, description, tags, stats)
+- CSV export functionality for offline analysis
 
 ## API Endpoints
 
@@ -177,6 +230,12 @@ yt_ai_analyst/
 │   │   └── youtubeService.js # YouTube API integration
 │   └── utils/
 │       └── youtubeHelper.js  # Helper functions
+├── public/
+│   ├── index.html            # Web dashboard UI
+│   ├── css/
+│   │   └── style.css         # Dashboard styling
+│   └── js/
+│       └── app.js            # Dashboard logic and SEO analysis
 ├── .env.example              # Environment variables template
 ├── .gitignore
 ├── package.json

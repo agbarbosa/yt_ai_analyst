@@ -12,6 +12,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from public directory
+app.use(express.static('public'));
+
 // Routes
 app.use('/api/channel', channelRoutes);
 
@@ -31,5 +34,7 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`Web UI: http://localhost:${PORT}`);
+  console.log(`API: http://localhost:${PORT}/api/channel/videos`);
   console.log(`Health check: http://localhost:${PORT}/health`);
 });
