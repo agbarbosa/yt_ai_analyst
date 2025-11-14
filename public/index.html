@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Channel SEO Analyst</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>YouTube Channel SEO Analyst</h1>
+            <p class="subtitle">Analyze YouTube channels for SEO insights and performance metrics</p>
+        </header>
+
+        <section class="search-section">
+            <div class="search-box">
+                <input
+                    type="text"
+                    id="channelUrl"
+                    placeholder="Enter YouTube channel URL (e.g., https://www.youtube.com/@mkbhd)"
+                    value=""
+                >
+                <div class="search-controls">
+                    <label for="maxResults">Max Videos:</label>
+                    <select id="maxResults">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50" selected>50</option>
+                        <option value="100">100</option>
+                        <option value="200">200</option>
+                    </select>
+                    <button id="analyzeBtn" onclick="analyzeChannel()">Analyze Channel</button>
+                </div>
+            </div>
+            <div id="loadingIndicator" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Analyzing channel data...</p>
+            </div>
+            <div id="errorMessage" class="error hidden"></div>
+        </section>
+
+        <div id="resultsContainer" class="hidden">
+            <!-- Channel Overview -->
+            <section class="channel-overview">
+                <div class="channel-header">
+                    <img id="channelThumbnail" src="" alt="Channel Thumbnail">
+                    <div class="channel-info">
+                        <h2 id="channelTitle"></h2>
+                        <p id="channelCustomUrl"></p>
+                        <p id="channelDescription"></p>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Views</h3>
+                        <p class="stat-value" id="totalViews">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Subscribers</h3>
+                        <p class="stat-value" id="subscriberCount">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Videos</h3>
+                        <p class="stat-value" id="videoCount">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Analyzed Videos</h3>
+                        <p class="stat-value" id="analyzedCount">0</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SEO Insights Tabs -->
+            <section class="insights-section">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+                    <button class="tab-btn" onclick="switchTab('keywords')">Keywords & Tags</button>
+                    <button class="tab-btn" onclick="switchTab('performance')">Performance</button>
+                    <button class="tab-btn" onclick="switchTab('videos')">All Videos</button>
+                </div>
+
+                <!-- Overview Tab -->
+                <div id="overview" class="tab-content active">
+                    <div class="insights-grid">
+                        <div class="insight-card">
+                            <h3>Top Performing Videos</h3>
+                            <div id="topVideos" class="video-list"></div>
+                        </div>
+                        <div class="insight-card">
+                            <h3>Engagement Metrics</h3>
+                            <div id="engagementMetrics" class="metrics-list"></div>
+                        </div>
+                    </div>
+                    <div class="insights-grid">
+                        <div class="insight-card">
+                            <h3>Most Common Tags</h3>
+                            <div id="topTags" class="tags-cloud"></div>
+                        </div>
+                        <div class="insight-card">
+                            <h3>Publishing Frequency</h3>
+                            <div id="publishingStats" class="stats-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Keywords & Tags Tab -->
+                <div id="keywords" class="tab-content">
+                    <div class="insights-grid">
+                        <div class="insight-card">
+                            <h3>Tag Analysis</h3>
+                            <div class="filter-controls">
+                                <input type="text" id="tagSearch" placeholder="Search tags..." onkeyup="filterTags()">
+                                <label>
+                                    Min frequency:
+                                    <input type="number" id="minFreq" value="2" min="1" onchange="filterTags()">
+                                </label>
+                            </div>
+                            <div id="tagAnalysis" class="tag-list"></div>
+                        </div>
+                        <div class="insight-card">
+                            <h3>Title Keywords</h3>
+                            <div id="titleKeywords" class="keyword-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Tab -->
+                <div id="performance" class="tab-content">
+                    <div class="insights-grid">
+                        <div class="insight-card full-width">
+                            <h3>Video Performance Metrics</h3>
+                            <div class="table-controls">
+                                <label>
+                                    Sort by:
+                                    <select id="sortBy" onchange="sortVideos()">
+                                        <option value="views">Views</option>
+                                        <option value="likes">Likes</option>
+                                        <option value="comments">Comments</option>
+                                        <option value="engagement">Engagement Rate</option>
+                                        <option value="date">Date (Newest)</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div id="performanceTable" class="performance-table"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- All Videos Tab -->
+                <div id="videos" class="tab-content">
+                    <div class="insights-grid">
+                        <div class="insight-card full-width">
+                            <h3>All Videos</h3>
+                            <div class="table-controls">
+                                <input type="text" id="videoSearch" placeholder="Search videos..." onkeyup="filterVideos()">
+                                <button onclick="exportToCSV()" class="export-btn">Export to CSV</button>
+                            </div>
+                            <div id="videosTable" class="videos-table"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
