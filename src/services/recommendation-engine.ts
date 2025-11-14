@@ -216,7 +216,7 @@ export class RecommendationEngine {
    */
   private identifyVideoPerformanceGaps(
     video: Video,
-    score: AlgorithmScore
+    _score: AlgorithmScore
   ): PerformanceGap[] {
     const gaps: PerformanceGap[] = [];
 

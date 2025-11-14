@@ -1347,7 +1347,7 @@ export function buildPrompt(
 
   // Handle conditional blocks (basic implementation)
   // {{#if condition}} ... {{/if}}
-  prompt = prompt.replace(/{{#if\s+(\w+)}}(.*?){{\/if}}/gs, (match, condition, content) => {
+  prompt = prompt.replace(/{{#if\s+(\w+)}}(.*?){{\/if}}/gs, (_match, condition, content) => {
     return variables[condition] ? content : '';
   });
 

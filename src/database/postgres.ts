@@ -24,7 +24,7 @@ class PostgresDatabase {
     });
 
     // Handle pool errors
-    this.pool.on('error', (err) => {
+    this.pool.on('error', (err: Error) => {
       logger.error('Unexpected PostgreSQL pool error', { error: err.message });
     });
 

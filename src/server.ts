@@ -68,7 +68,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 /**
  * Health check
  */
-app.get('/health', async (req: Request, res: Response) => {
+app.get('/health', async (_req: Request, res: Response) => {
   try {
     const dbHealthy = await db.testConnection();
 
@@ -303,14 +303,14 @@ app.get('/api/search/channels', async (req: Request, res: Response) => {
       channelIds.map((id) => youtubeAPI.getChannelData(id))
     );
 
-    res.json({
+    return res.json({
       query: q,
       results: channels,
       count: channels.length,
     });
   } catch (error) {
     logger.error('Channel search failed', { error });
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to search channels',
       message: (error as Error).message,
     });
@@ -330,7 +330,7 @@ app.use((req: Request, res: Response) => {
 });
 
 // Global error handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.error('Unhandled error', { error: err, path: req.path });
 
   res.status(500).json({
