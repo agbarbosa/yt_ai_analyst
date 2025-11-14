@@ -66,157 +66,59 @@ psql -d yt_ai_analyst -f src/database/schema.sql
 npm run dev
 ```
 
-<<<<<<< HEAD
-Production mode:
-```bash
-npm start
-```
-
-The application will be available at:
-- **Web Dashboard**: `http://localhost:3000`
-- **API**: `http://localhost:3000/api`
-- **Health Check**: `http://localhost:3000/health`
-
-## Using the Web Dashboard
-
-1. Open your browser and navigate to `http://localhost:3000`
-2. Enter a YouTube channel URL in any of these formats:
-   - `https://www.youtube.com/@username`
-   - `https://www.youtube.com/channel/UCxxxxx`
-   - `https://www.youtube.com/c/channelname`
-   - `https://www.youtube.com/user/username`
-3. Select the maximum number of videos to analyze (10-200)
-4. Click "Analyze Channel"
-
-### Dashboard Features
-
-**Overview Tab:**
-- Channel statistics (subscribers, total views, video count)
-- Top 5 performing videos
-- Engagement metrics (average views, engagement rate)
-- Most common tags
-- Publishing frequency analysis
-
-**Keywords & Tags Tab:**
-- Complete tag analysis with frequency counts
-- Filter tags by search term and minimum frequency
-- Title keyword extraction (identifies most used words in video titles)
-- SEO optimization insights
-
-**Performance Tab:**
-- Sortable table of all videos by:
-  - Views
-  - Likes
-  - Comments
-  - Engagement Rate
-  - Publication Date
-- Detailed metrics for each video
-
-**All Videos Tab:**
-- Searchable table of all analyzed videos
-- Complete video information (title, description, tags, stats)
-- CSV export functionality for offline analysis
-
-## API Endpoints
-
-### Health Check
-
-```http
-GET /health
-```
-
-Returns the API status.
-
-**Response:**
-```json
-{
-  "status": "OK",
-  "message": "YouTube AI Analyst API is running"
-}
-```
-
-### Get Channel Videos
-
-```http
-GET /api/channel/videos?url=<channel_url>&maxResults=<number>
-```
-
-Fetches all videos from a YouTube channel with detailed information.
-
-**Query Parameters:**
-- `url` (required): YouTube channel URL
-- `maxResults` (optional): Maximum number of videos to fetch (default: 50, max: 500)
-
-**Supported URL formats:**
-- `https://www.youtube.com/channel/UCxxxxx`
-- `https://www.youtube.com/@username`
-- `https://www.youtube.com/c/channelname`
-- `https://www.youtube.com/user/username`
-
-**Example Request:**
-```bash
-curl "http://localhost:3000/api/channel/videos?url=https://www.youtube.com/@mkbhd&maxResults=10"
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "channel": {
-      "id": "UCBJycsmduvYEL83R_U4JriQ",
-      "title": "Marques Brownlee",
-      "description": "Channel description...",
-      "customUrl": "@mkbhd",
-      "publishedAt": "2008-03-21T20:45:23Z",
-      "thumbnails": { ... },
-      "statistics": {
-        "viewCount": 1000000,
-        "subscriberCount": 500000,
-        "videoCount": 1500
-      }
-    },
-    "videos": [
-      {
-        "id": "dQw4w9WgXcQ",
-        "title": "Video Title",
-        "description": "Video description...",
-        "publishedAt": "2024-01-15T10:30:00Z",
-        "thumbnails": { ... },
-        "tags": ["tech", "review", "gadgets"],
-        "duration": "10:25",
-        "statistics": {
-          "viewCount": 50000,
-          "likeCount": 2500,
-          "commentCount": 150
-        },
-        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-      }
-    ],
-    "totalVideos": 10
-  }
-}
-```
-
-### Get Channel Info
-
-```http
-GET /api/channel/info?url=<channel_url>
-```
-
-Fetches basic information about a YouTube channel without videos.
-
-**Query Parameters:**
-- `url` (required): YouTube channel URL
-
-**Example Request:**
-```bash
-curl "http://localhost:3000/api/channel/info?url=https://www.youtube.com/@mkbhd"
-```
-
-## Project Structure
-=======
 Server will start at `http://localhost:3000`
+
+## 🐳 Docker Setup (Recommended)
+
+For a complete production-ready environment with all dependencies:
+
+### Quick Start with Docker
+
+```bash
+# 1. Clone repository
+git clone https://github.com/agbarbosa/yt_ai_analyst.git
+cd yt_ai_analyst
+
+# 2. Configure environment
+cp .env.docker .env
+# Edit .env with your API keys
+
+# 3. Start all services
+./docker-start.sh
+```
+
+### What's Included
+
+- ✅ **Application**: Node.js 20 with TypeScript
+- ✅ **PostgreSQL 15**: Automatically initialized with schema
+- ✅ **MongoDB 7**: Analytics storage
+- ✅ **Redis 7**: Caching and job queue
+- ✅ **Admin Tools** (optional): pgAdmin, Mongo Express, Redis Commander
+
+### Docker Commands
+
+```bash
+# Start services
+./docker-start.sh
+
+# Stop services
+./docker-stop.sh
+
+# View logs
+./docker-logs.sh [service]
+
+# Reset everything (caution!)
+./docker-reset.sh
+```
+
+### Service URLs (Docker)
+
+- **Application**: http://localhost:3000
+- **pgAdmin**: http://localhost:5050 (with `--profile admin`)
+- **Mongo Express**: http://localhost:8081 (with `--profile admin`)
+- **Redis Commander**: http://localhost:8082 (with `--profile admin`)
+
+📖 **Complete Docker Guide**: See [DOCKER_SETUP.md](DOCKER_SETUP.md)
 
 ## 📡 API Endpoints
 
@@ -293,71 +195,10 @@ Search for YouTube channels by keyword.
 - **0-29 (F)**: Critical issues, immediate attention needed
 
 ## 🏗️ Project Structure
->>>>>>> 324480a0e92fcb328628cb9b0ed1ab65ac33107c
 
 ```
 yt_ai_analyst/
 ├── src/
-<<<<<<< HEAD
-│   ├── index.js              # Main application entry point
-│   ├── routes/
-│   │   └── channel.js        # Channel-related API routes
-│   ├── services/
-│   │   └── youtubeService.js # YouTube API integration
-│   └── utils/
-│       └── youtubeHelper.js  # Helper functions
-├── public/
-│   ├── index.html            # Web dashboard UI
-│   ├── css/
-│   │   └── style.css         # Dashboard styling
-│   └── js/
-│       └── app.js            # Dashboard logic and SEO analysis
-├── .env.example              # Environment variables template
-├── .gitignore
-├── package.json
-└── README.md
-```
-
-## Error Handling
-
-The API returns appropriate HTTP status codes and error messages:
-
-- `400 Bad Request`: Missing or invalid parameters
-- `500 Internal Server Error`: Server or API errors
-
-Example error response:
-```json
-{
-  "success": false,
-  "error": "Failed to fetch channel videos",
-  "message": "Invalid YouTube channel URL"
-}
-```
-
-## Rate Limits
-
-YouTube Data API v3 has quota limits. Each request consumes quota units:
-- Default quota: 10,000 units per day
-- Video list request: ~3-5 units
-- Channel info: ~1 unit
-
-Monitor your usage in the [Google Cloud Console](https://console.cloud.google.com/).
-
-## Technologies Used
-
-- **Express.js**: Web framework
-- **Axios**: HTTP client for API requests
-- **dotenv**: Environment variable management
-- **CORS**: Cross-origin resource sharing
-
-## License
-
-MIT
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-=======
 │   ├── ai/
 │   │   └── prompts.ts           # AI prompt templates
 │   ├── config/
@@ -564,4 +405,3 @@ For issues and questions:
 ---
 
 **Built with ❤️ for YouTube creators seeking algorithm success in 2025**
->>>>>>> 324480a0e92fcb328628cb9b0ed1ab65ac33107c
