@@ -290,7 +290,7 @@ For each recommendation:
 
 ### 4. RECOMMENDED ACTIONS
 Provide 2-4 specific actions:
-```
+\`\`\`
 1. [Action 1]
    - Details: [Specific instructions]
    - Effort: Low/Medium/High
@@ -298,7 +298,7 @@ Provide 2-4 specific actions:
 
 2. [Action 2]
    ...
-```
+\`\`\`
 
 ### 5. EXPECTED IMPROVEMENT
 - Metric: [CTR/Retention/Engagement]
@@ -816,7 +816,7 @@ Analyze retention patterns and provide timestamp-specific recommendations to imp
 
 Based on retention analysis, here's the optimal structure for future videos in this niche:
 
-```
+\`\`\`
 [0:00-0:15] HOOK
 ├─ 0:00-0:03: Pattern interrupt (shocking stat, bold claim, visual)
 ├─ 0:04-0:08: Value promise (what viewer will learn/gain)
@@ -834,7 +834,7 @@ Based on retention analysis, here's the optimal structure for future videos in t
 ├─ [Timestamp]: Recap value delivered
 ├─ [Timestamp]: CTA (like, subscribe, next video)
 └─ [Timestamp]: End screen appears
-```
+\`\`\`
 
 **Optimal Video Length for This Content**: [X-Y minutes]
 **Rationale**: [Why this length]
@@ -1039,7 +1039,7 @@ Generate 10 Shorts concepts derived from existing long-form content:
 - Avoid: [Times/days to skip]
 
 **Content Calendar Template**:
-```
+\`\`\`
 Week 1:
 - Monday: [Short concept]
 - Wednesday: [Short concept]
@@ -1048,7 +1048,7 @@ Week 1:
 
 Week 2:
 [Pattern]
-```
+\`\`\`
 
 **Batching Strategy**:
 - [How to efficiently create multiple Shorts]
