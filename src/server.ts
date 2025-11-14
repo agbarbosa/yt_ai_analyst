@@ -23,8 +23,21 @@ const app: Express = express();
 // MIDDLEWARE
 // ============================================================================
 
-// Security headers
-app.use(helmet());
+// Security headers - Configure CSP to allow inline scripts for the frontend
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'", 'data:'],
+      },
+    },
+  })
+);
 
 // CORS
 app.use(
