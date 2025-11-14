@@ -434,6 +434,161 @@ app.get('/api/search/channels', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Helper function to extract channel identifier from URL
+ */
+function extractChannelIdentifier(url: string): string | null {
+  try {
+    // Handle different URL formats
+    // Format 1: youtube.com/channel/UCxxxxx
+    if (url.includes('/channel/')) {
+      const match = url.match(/\/channel\/([a-zA-Z0-9_-]+)/);
+      return match ? match[1] : null;
+    }
+
+    // Format 2: youtube.com/@username
+    if (url.includes('/@')) {
+      const match = url.match(/\/@([a-zA-Z0-9_-]+)/);
+      return match ? match[1] : null;
+    }
+
+    // Format 3: youtube.com/c/customname or youtube.com/user/username
+    if (url.includes('/c/') || url.includes('/user/')) {
+      const match = url.match(/\/(c|user)\/([a-zA-Z0-9_-]+)/);
+      return match ? match[2] : null;
+    }
+
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Helper function to resolve channel ID from identifier (handle @username format)
+ */
+async function resolveChannelId(identifier: string): Promise<string> {
+  // If it's already a channel ID (starts with UC), return it
+  if (identifier.startsWith('UC')) {
+    return identifier;
+  }
+
+  // Otherwise, search for the channel by name/handle
+  const channelIds = await youtubeAPI.searchChannels(identifier, 1);
+  if (channelIds.length === 0) {
+    throw new Error(`Channel not found: ${identifier}`);
+  }
+
+  return channelIds[0];
+}
+
+/**
+ * GET /api/channel/videos
+ * Fetch all videos from a YouTube channel by URL
+ */
+app.get('/api/channel/videos', async (req: Request, res: Response) => {
+  try {
+    const { url, maxResults = 50 } = req.query;
+
+    // Validate required parameters
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({
+        error: 'Missing required parameter',
+        message: 'Please provide a YouTube channel URL in the "url" query parameter',
+      });
+    }
+
+    // Validate maxResults
+    const maxResultsNum = parseInt(String(maxResults));
+    if (isNaN(maxResultsNum) || maxResultsNum < 1 || maxResultsNum > 500) {
+      return res.status(400).json({
+        error: 'Invalid parameter',
+        message: 'maxResults must be a number between 1 and 500',
+      });
+    }
+
+    logger.info('Fetching channel videos', { url, maxResults: maxResultsNum });
+
+    // Extract channel identifier from URL
+    const identifier = extractChannelIdentifier(url);
+    if (!identifier) {
+      return res.status(400).json({
+        error: 'Invalid YouTube channel URL',
+        message: 'Could not extract channel identifier from the provided URL',
+      });
+    }
+
+    // Resolve to channel ID
+    const channelId = await resolveChannelId(identifier);
+
+    // Fetch channel data
+    const channelData = await youtubeAPI.getChannelData(channelId);
+
+    // Fetch video IDs
+    const videoIds = await youtubeAPI.getChannelVideos(channelId, maxResultsNum);
+
+    // Fetch detailed video data in batches
+    const videosData = await youtubeAPI.getVideosDataBatch(videoIds);
+
+    return res.json({
+      channel: channelData,
+      videos: videosData,
+      totalVideos: videosData.length,
+      requestedMaxResults: maxResultsNum,
+    });
+  } catch (error) {
+    logger.error('Failed to fetch channel videos', { error, url: req.query.url });
+    return res.status(500).json({
+      error: 'Failed to fetch channel videos',
+      message: (error as Error).message,
+    });
+  }
+});
+
+/**
+ * GET /api/channel/info
+ * Fetch basic information about a YouTube channel by URL
+ */
+app.get('/api/channel/info', async (req: Request, res: Response) => {
+  try {
+    const { url } = req.query;
+
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({
+        error: 'Missing required parameter',
+        message: 'Please provide a YouTube channel URL in the "url" query parameter',
+      });
+    }
+
+    logger.info('Fetching channel info', { url });
+
+    // Extract channel identifier from URL
+    const identifier = extractChannelIdentifier(url);
+    if (!identifier) {
+      return res.status(400).json({
+        error: 'Invalid YouTube channel URL',
+        message: 'Could not extract channel identifier from the provided URL',
+      });
+    }
+
+    // Resolve to channel ID
+    const channelId = await resolveChannelId(identifier);
+
+    // Fetch channel data
+    const channelData = await youtubeAPI.getChannelData(channelId);
+
+    return res.json({
+      channel: channelData,
+    });
+  } catch (error) {
+    logger.error('Failed to fetch channel info', { error, url: req.query.url });
+    return res.status(500).json({
+      error: 'Failed to fetch channel info',
+      message: (error as Error).message,
+    });
+  }
+});
+
 // ============================================================================
 // ERROR HANDLING
 // ============================================================================
