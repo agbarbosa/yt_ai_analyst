@@ -8,6 +8,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import { config } from './config';
 import logger, { logAPICall } from './utils/logger';
 import { youtubeAPI } from './services/youtube-api';
@@ -60,6 +61,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
   next();
 });
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, '../public')));
 
 // ============================================================================
 // ROUTES

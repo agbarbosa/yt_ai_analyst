@@ -32,6 +32,9 @@ COPY --from=builder /app/dist ./dist
 COPY src/ai/prompts.ts ./src/ai/prompts.ts
 COPY src/types/models.ts ./src/types/models.ts
 
+# Copy public folder (frontend static files)
+COPY public ./public
+
 # Create logs directory
 RUN mkdir -p /app/logs
 
