@@ -508,17 +508,50 @@ sudo netstat -tulpn | grep :3000
 # Kill process or change port in .env
 ```
 
-### Cannot Connect to Docker Daemon
+### Environment Variable Warnings
 
-**Problem**: "Cannot connect to Docker daemon"
+**Problem**: "The YOUTUBE_CLIENT_ID variable is not set. Defaulting to a blank string."
+
+**Solution**:
 
 ```bash
-# Start Docker service
-sudo systemctl start docker      # Linux
-# or open Docker Desktop          # Mac/Windows
+# Ensure .env file exists
+ls -la .env
 
-# Check Docker is running
+# If missing, copy from template
+cp .env.docker .env
+
+# Edit with your actual API keys
+nano .env  # Update YOUTUBE_API_KEY, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, ANTHROPIC_API_KEY
+```
+
+**Critical**: The application REQUIRES these API keys to function:
+- `YOUTUBE_API_KEY` - Get from https://console.cloud.google.com/
+- `YOUTUBE_CLIENT_ID` - OAuth client ID from Google Cloud Console
+- `YOUTUBE_CLIENT_SECRET` - OAuth client secret
+- `ANTHROPIC_API_KEY` - Get from https://console.anthropic.com/
+
+### Cannot Connect to Docker Daemon
+
+**Problem**: "Cannot connect to Docker daemon" or "open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified"
+
+**Solution**:
+
+```bash
+# Windows (WSL2): Ensure Docker Desktop is running
+# 1. Open Docker Desktop application on Windows
+# 2. Wait for it to fully start (green icon in system tray)
+# 3. In WSL2, verify connection:
 docker info
+
+# Linux: Start Docker service
+sudo systemctl start docker
+
+# Mac: Open Docker Desktop application
+
+# Verify Docker is running
+docker info
+docker ps
 ```
 
 ---
