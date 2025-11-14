@@ -3,7 +3,7 @@
  * Handles connection pooling and query execution
  */
 
-import { Pool, PoolClient, QueryResult } from 'pg';
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { config } from '../config';
 import logger from '../utils/logger';
 
@@ -41,7 +41,7 @@ class PostgresDatabase {
   /**
    * Execute a query
    */
-  public async query<T = any>(text: string, params?: any[]): Promise<QueryResult<T>> {
+  public async query<T extends QueryResultRow = any>(text: string, params?: any[]): Promise<QueryResult<T>> {
     const start = Date.now();
     try {
       const result = await this.pool.query<T>(text, params);

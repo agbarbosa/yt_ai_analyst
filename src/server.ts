@@ -8,6 +8,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import { config } from './config';
 import logger, { logAPICall } from './utils/logger';
 import { youtubeAPI } from './services/youtube-api';
@@ -22,8 +23,23 @@ const app: Express = express();
 // MIDDLEWARE
 // ============================================================================
 
-// Security headers
-app.use(helmet());
+// Security headers - Configure CSP to allow inline scripts for the frontend
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrcAttr: ["'unsafe-inline'"],  // Allow inline event handlers like onclick
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        styleSrcElem: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
+      },
+    },
+  })
+);
 
 // CORS
 app.use(
@@ -60,6 +76,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
   next();
 });
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, '../public')));
 
 // ============================================================================
 // ROUTES
@@ -278,6 +297,104 @@ app.post('/api/videos/:videoId/optimize-title', async (req: Request, res: Respon
     res.status(500).json({
       error: 'Failed to optimize title',
       message: (error as Error).message,
+    });
+  }
+});
+
+/**
+ * GET /api/channel/videos
+ * Fetch channel data and videos by URL (for frontend)
+ */
+app.get('/api/channel/videos', async (req: Request, res: Response) => {
+  try {
+    const { url, maxResults = '50' } = req.query;
+
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Query parameter "url" is required',
+      });
+    }
+
+    logger.info('Fetching channel videos by URL', { url, maxResults });
+
+    // Extract channel handle or ID from URL
+    // Supports: https://www.youtube.com/@handle, https://www.youtube.com/channel/ID, @handle
+    let channelIdentifier = url;
+
+    const urlPatterns = [
+      /youtube\.com\/@([^\/\?]+)/,  // @handle
+      /youtube\.com\/channel\/([^\/\?]+)/,  // channel ID
+      /youtube\.com\/c\/([^\/\?]+)/,  // custom URL
+      /^@(.+)$/  // Just @handle
+    ];
+
+    for (const pattern of urlPatterns) {
+      const match = url.match(pattern);
+      if (match) {
+        channelIdentifier = match[1];
+        break;
+      }
+    }
+
+    // Search for the channel
+    const channelIds = await youtubeAPI.searchChannels(channelIdentifier, 1);
+
+    if (channelIds.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Channel not found. Please check the URL and try again.',
+      });
+    }
+
+    const channelId = channelIds[0];
+
+    // Fetch channel data
+    const channelData = await youtubeAPI.getChannelData(channelId);
+
+    // Fetch videos
+    const videoIds = await youtubeAPI.getChannelVideos(channelId, Number(maxResults));
+    const videosData = await youtubeAPI.getVideosDataBatch(videoIds);
+
+    // Format response for frontend
+    return res.json({
+      success: true,
+      data: {
+        channel: {
+          id: channelData.id,
+          title: channelData.title,
+          customUrl: channelData.customUrl || `@${channelData.title.replace(/\s+/g, '')}`,
+          description: channelData.description,
+          thumbnails: channelData.thumbnails,
+          statistics: {
+            viewCount: channelData.viewCount,
+            subscriberCount: channelData.subscriberCount,
+            videoCount: channelData.videoCount,
+          },
+        },
+        totalVideos: videosData.length,
+        videos: videosData.map(video => ({
+          id: video.id,
+          url: `https://www.youtube.com/watch?v=${video.id}`,
+          title: video.title,
+          description: video.description,
+          publishedAt: video.publishedAt,
+          thumbnails: video.thumbnails,
+          statistics: {
+            viewCount: video.views || 0,
+            likeCount: video.likes || 0,
+            commentCount: video.comments || 0,
+          },
+          tags: video.tags || [],
+          duration: video.duration,
+        })),
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to fetch channel videos', { error });
+    return res.status(500).json({
+      success: false,
+      message: (error as Error).message || 'Failed to fetch channel data',
     });
   }
 });
