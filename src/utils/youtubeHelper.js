@@ -38,7 +38,17 @@ export function extractChannelIdentifier(url) {
  * @returns {string} - Formatted duration (e.g., 1:02:10)
  */
 export function formatDuration(duration) {
+  // Handle undefined, null, or empty duration
+  if (!duration) {
+    return '0:00';
+  }
+
   const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+
+  // If match fails, return default
+  if (!match) {
+    return '0:00';
+  }
 
   const hours = (match[1] || '').replace('H', '');
   const minutes = (match[2] || '').replace('M', '');
