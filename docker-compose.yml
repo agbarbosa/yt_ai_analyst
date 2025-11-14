@@ -1,0 +1,227 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: yt_analyst_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-yt_ai_analyst}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password_change_me}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - yt_analyst_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-yt_ai_analyst}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB (for analytics data)
+  mongodb:
+    image: mongo:7-jammy
+    container_name: yt_analyst_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGODB_DB:-yt_ai_analyst}
+    ports:
+      - "${MONGODB_PORT:-27017}:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - yt_analyst_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (for caching and job queues)
+  redis:
+    image: redis:7-alpine
+    container_name: yt_analyst_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password_change_me}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - yt_analyst_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # YouTube AI Analyst Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: yt_analyst_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Application
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-3000}
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:3000}
+
+      # YouTube API
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID}
+      YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET}
+      YOUTUBE_REDIRECT_URI: ${YOUTUBE_REDIRECT_URI:-http://localhost:3000/auth/callback}
+
+      # AI Services
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_AI_API_KEY: ${GOOGLE_AI_API_KEY:-}
+
+      # Database - PostgreSQL
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-yt_ai_analyst}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password_change_me}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password_change_me}@postgres:5432/${POSTGRES_DB:-yt_ai_analyst}
+
+      # Database - MongoDB
+      MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DB:-yt_ai_analyst}
+      MONGODB_DB: ${MONGODB_DB:-yt_ai_analyst}
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password_change_me}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_password_change_me}@redis:6379
+
+      # Security
+      JWT_SECRET: ${JWT_SECRET:-jwt_secret_change_me_minimum_32_characters_long}
+      JWT_EXPIRY: ${JWT_EXPIRY:-7d}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+
+      # Rate Limiting
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FILE_PATH: ${LOG_FILE_PATH:-./logs/app.log}
+
+      # Background Jobs
+      BULL_REDIS_HOST: redis
+      BULL_REDIS_PORT: 6379
+
+      # Data Collection
+      DATA_COLLECTION_INTERVAL_HOURS: ${DATA_COLLECTION_INTERVAL_HOURS:-6}
+      ANALYTICS_RETENTION_DAYS: ${ANALYTICS_RETENTION_DAYS:-90}
+
+      # AI Configuration
+      AI_PRIMARY_MODEL: ${AI_PRIMARY_MODEL:-claude-sonnet-4.5}
+      AI_TEMPERATURE_ANALYTICAL: ${AI_TEMPERATURE_ANALYTICAL:-0.3}
+      AI_TEMPERATURE_CREATIVE: ${AI_TEMPERATURE_CREATIVE:-0.6}
+      AI_MAX_TOKENS: ${AI_MAX_TOKENS:-4000}
+
+      # Features
+      ENABLE_SHORTS_ANALYSIS: ${ENABLE_SHORTS_ANALYSIS:-true}
+      ENABLE_COMPETITOR_ANALYSIS: ${ENABLE_COMPETITOR_ANALYSIS:-false}
+      ENABLE_REALTIME_UPDATES: ${ENABLE_REALTIME_UPDATES:-true}
+
+      # Monitoring
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      DATADOG_API_KEY: ${DATADOG_API_KEY:-}
+
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - yt_analyst_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # pgAdmin (Optional - for database management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: yt_analyst_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@ytanalyst.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin_password_change_me}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - yt_analyst_network
+    depends_on:
+      - postgres
+    profiles:
+      - admin
+
+  # Mongo Express (Optional - for MongoDB management)
+  mongo-express:
+    image: mongo-express:latest
+    container_name: yt_analyst_mongo_express
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:-admin_password_change_me}
+    ports:
+      - "${MONGO_EXPRESS_PORT:-8081}:8081"
+    networks:
+      - yt_analyst_network
+    depends_on:
+      - mongodb
+    profiles:
+      - admin
+
+  # Redis Commander (Optional - for Redis management)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: yt_analyst_redis_commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:${REDIS_PASSWORD:-redis_password_change_me}
+    ports:
+      - "${REDIS_COMMANDER_PORT:-8082}:8081"
+    networks:
+      - yt_analyst_network
+    depends_on:
+      - redis
+    profiles:
+      - admin
+
+networks:
+  yt_analyst_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
