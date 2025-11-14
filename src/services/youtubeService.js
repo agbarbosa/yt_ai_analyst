@@ -89,8 +89,9 @@ class YouTubeService {
       const videos = await this.getPlaylistVideos(uploadsPlaylistId, maxResults);
 
       // Get detailed video information including tags and statistics
-      const videoIds = videos.map(v => v.snippet.resourceId.videoId).join(',');
-      const detailedVideos = await this.getVideoDetails(videoIds);
+      // YouTube API limits to 50 video IDs per request, so we need to batch
+      const videoIds = videos.map(v => v.snippet.resourceId.videoId);
+      const detailedVideos = await this.getVideoDetailsBatched(videoIds);
 
       // Format the response
       return {
@@ -158,6 +159,36 @@ class YouTubeService {
       return videos;
     } catch (error) {
       throw new Error(`Failed to fetch playlist videos: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get detailed information for multiple videos (batched for large requests)
+   * @param {Array<string>} videoIdsArray - Array of video IDs
+   * @returns {Promise<Array>} - Array of detailed video information
+   */
+  async getVideoDetailsBatched(videoIdsArray) {
+    try {
+      const BATCH_SIZE = 50; // YouTube API limit
+      const batches = [];
+
+      // Split video IDs into chunks of 50
+      for (let i = 0; i < videoIdsArray.length; i += BATCH_SIZE) {
+        const chunk = videoIdsArray.slice(i, i + BATCH_SIZE);
+        batches.push(chunk);
+      }
+
+      // Fetch details for each batch
+      const allVideoDetails = [];
+      for (const batch of batches) {
+        const videoIds = batch.join(',');
+        const details = await this.getVideoDetails(videoIds);
+        allVideoDetails.push(...details);
+      }
+
+      return allVideoDetails;
+    } catch (error) {
+      throw new Error(`Failed to fetch batched video details: ${error.message}`);
     }
   }
 
