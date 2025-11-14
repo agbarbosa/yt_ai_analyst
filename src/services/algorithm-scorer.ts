@@ -9,7 +9,7 @@
  * - Satisfaction Score: 0-15 points (15% weight)
  */
 
-import { AlgorithmScore, ScoreGrade, Video, Channel } from '../types/models';
+import { AlgorithmScore, ScoreGrade, Video } from '../types/models';
 import logger from '../utils/logger';
 
 export class AlgorithmScorerService {
