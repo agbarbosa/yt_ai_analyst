@@ -68,6 +68,58 @@ npm run dev
 
 Server will start at `http://localhost:3000`
 
+## 🐳 Docker Setup (Recommended)
+
+For a complete production-ready environment with all dependencies:
+
+### Quick Start with Docker
+
+```bash
+# 1. Clone repository
+git clone https://github.com/agbarbosa/yt_ai_analyst.git
+cd yt_ai_analyst
+
+# 2. Configure environment
+cp .env.docker .env
+# Edit .env with your API keys
+
+# 3. Start all services
+./docker-start.sh
+```
+
+### What's Included
+
+- ✅ **Application**: Node.js 20 with TypeScript
+- ✅ **PostgreSQL 15**: Automatically initialized with schema
+- ✅ **MongoDB 7**: Analytics storage
+- ✅ **Redis 7**: Caching and job queue
+- ✅ **Admin Tools** (optional): pgAdmin, Mongo Express, Redis Commander
+
+### Docker Commands
+
+```bash
+# Start services
+./docker-start.sh
+
+# Stop services
+./docker-stop.sh
+
+# View logs
+./docker-logs.sh [service]
+
+# Reset everything (caution!)
+./docker-reset.sh
+```
+
+### Service URLs (Docker)
+
+- **Application**: http://localhost:3000
+- **pgAdmin**: http://localhost:5050 (with `--profile admin`)
+- **Mongo Express**: http://localhost:8081 (with `--profile admin`)
+- **Redis Commander**: http://localhost:8082 (with `--profile admin`)
+
+📖 **Complete Docker Guide**: See [DOCKER_SETUP.md](DOCKER_SETUP.md)
+
 ## 📡 API Endpoints
 
 ### Channel Analysis
