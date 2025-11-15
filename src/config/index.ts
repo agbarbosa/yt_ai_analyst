@@ -26,8 +26,17 @@ const configSchema = z.object({
 
   // AI Services
   ai: z.object({
+    provider: z.enum(['openrouter', 'anthropic', 'openai', 'google']).default('openrouter'),
+    openrouter: z.object({
+      apiKey: z.string().optional(),
+      model: z.string().default('anthropic/claude-sonnet-4-20250514'),
+      temperatureAnalytical: z.coerce.number().min(0).max(1).default(0.3),
+      temperatureCreative: z.coerce.number().min(0).max(1).default(0.6),
+      maxTokens: z.coerce.number().int().positive().default(4000),
+      baseUrl: z.string().url().default('https://openrouter.ai/api/v1'),
+    }),
     anthropic: z.object({
-      apiKey: z.string().min(1, 'Anthropic API key is required'),
+      apiKey: z.string().optional(),
       model: z.string().default('claude-sonnet-4-20250514'),
       temperatureAnalytical: z.coerce.number().min(0).max(1).default(0.3),
       temperatureCreative: z.coerce.number().min(0).max(1).default(0.6),
@@ -132,6 +141,15 @@ function loadConfig() {
       },
 
       ai: {
+        provider: process.env.AI_PROVIDER,
+        openrouter: {
+          apiKey: process.env.OPENROUTER_API_KEY,
+          model: process.env.OPENROUTER_MODEL || process.env.AI_PRIMARY_MODEL,
+          temperatureAnalytical: process.env.AI_TEMPERATURE_ANALYTICAL,
+          temperatureCreative: process.env.AI_TEMPERATURE_CREATIVE,
+          maxTokens: process.env.AI_MAX_TOKENS,
+          baseUrl: process.env.OPENROUTER_BASE_URL,
+        },
         anthropic: {
           apiKey: process.env.ANTHROPIC_API_KEY,
           model: process.env.AI_PRIMARY_MODEL,

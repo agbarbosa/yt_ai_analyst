@@ -1,6 +1,6 @@
 /**
  * AI Service
- * Handles AI generation using Anthropic Claude and other models
+ * Handles AI generation using OpenRouter, Anthropic Claude and other models
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -23,14 +23,17 @@ export interface AIGenerationResult {
 }
 
 export class AIService {
-  private anthropic: Anthropic;
+  private anthropic?: Anthropic;
   private static instance: AIService;
 
   private constructor() {
-    this.anthropic = new Anthropic({
-      apiKey: config.ai.anthropic.apiKey,
-    });
-    logger.info('AI service initialized');
+    // Initialize Anthropic client only if not using OpenRouter
+    if (config.ai.provider !== 'openrouter' && config.ai.anthropic.apiKey) {
+      this.anthropic = new Anthropic({
+        apiKey: config.ai.anthropic.apiKey,
+      });
+    }
+    logger.info('AI service initialized', { provider: config.ai.provider });
   }
 
   public static getInstance(): AIService {
@@ -41,12 +44,99 @@ export class AIService {
   }
 
   /**
+   * Generate content using OpenRouter
+   */
+  public async generateWithOpenRouter(
+    prompt: string,
+    options: AIGenerationOptions = {}
+  ): Promise<AIGenerationResult> {
+    if (!config.ai.openrouter.apiKey) {
+      throw new Error('OpenRouter API key not configured. Please set OPENROUTER_API_KEY environment variable.');
+    }
+
+    const startTime = Date.now();
+
+    try {
+      const model = options.model || config.ai.openrouter.model;
+      const temperature = options.temperature ?? config.ai.openrouter.temperatureAnalytical;
+      const maxTokens = options.maxTokens || config.ai.openrouter.maxTokens;
+
+      const messages = [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ];
+
+      const requestBody: any = {
+        model,
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+      };
+
+      if (options.systemPrompt) {
+        requestBody.messages.unshift({
+          role: 'system',
+          content: options.systemPrompt,
+        });
+      }
+
+      const response = await fetch(`${config.ai.openrouter.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${config.ai.openrouter.apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': config.apiBaseUrl,
+          'X-Title': 'YouTube AI Analyst',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      const duration = Date.now() - startTime;
+      const content = data.choices[0]?.message?.content || '';
+
+      const tokensUsed = data.usage?.total_tokens || 0;
+
+      logAIGeneration(model, 'recommendation', tokensUsed, duration);
+
+      logger.info('OpenRouter generation completed', {
+        model,
+        tokensUsed,
+        duration,
+        promptLength: prompt.length,
+        responseLength: content.length,
+      });
+
+      return {
+        content,
+        model,
+        tokensUsed,
+        duration,
+      };
+    } catch (error) {
+      logger.error('OpenRouter generation failed', { error, prompt: prompt.substring(0, 100) });
+      throw error;
+    }
+  }
+
+  /**
    * Generate content using Claude
    */
   public async generateWithClaude(
     prompt: string,
     options: AIGenerationOptions = {}
   ): Promise<AIGenerationResult> {
+    if (!this.anthropic) {
+      throw new Error('Anthropic client not initialized. Please set ANTHROPIC_API_KEY or use OpenRouter.');
+    }
+
     const startTime = Date.now();
 
     try {
@@ -108,12 +198,18 @@ export class AIService {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        return await this.generateWithClaude(prompt, options);
+        // Use the configured provider
+        if (config.ai.provider === 'openrouter') {
+          return await this.generateWithOpenRouter(prompt, options);
+        } else {
+          return await this.generateWithClaude(prompt, options);
+        }
       } catch (error) {
         lastError = error as Error;
         logger.warn(`AI generation attempt ${attempt} failed`, {
           attempt,
           maxRetries,
+          provider: config.ai.provider,
           error: (error as Error).message,
         });
 
