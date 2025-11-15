@@ -186,8 +186,20 @@ export class YouTubeAPIService {
     const batchSize = 50; // YouTube API limit
 
     try {
+      logger.info('Starting batch video fetch', {
+        totalVideos: videoIds.length,
+        batches: Math.ceil(videoIds.length / batchSize)
+      });
+
       for (let i = 0; i < videoIds.length; i += batchSize) {
         const batch = videoIds.slice(i, i + batchSize);
+        const batchNumber = Math.floor(i / batchSize) + 1;
+
+        logger.info('Fetching video batch', {
+          batchNumber,
+          batchSize: batch.length,
+          progress: `${i + batch.length}/${videoIds.length}`
+        });
 
         const response = await this.youtube.videos.list({
           part: ['snippet', 'statistics', 'contentDetails'],
@@ -224,12 +236,16 @@ export class YouTubeAPIService {
 
         // Rate limiting delay
         if (i + batchSize < videoIds.length) {
+          logger.info('Applying rate limit delay before next batch', { delayMs: 100 });
           await this.delay(100);
         }
       }
 
       logYouTubeAPI('getVideosDataBatch', `${videoIds.length} videos`, true);
-      logger.info('Fetched batch of videos', { count: results.length });
+      logger.info('Batch video fetch completed', {
+        requested: videoIds.length,
+        fetched: results.length
+      });
 
       return results;
     } catch (error) {

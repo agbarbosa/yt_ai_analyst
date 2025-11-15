@@ -14,6 +14,15 @@ const axiosInstance: AxiosInstance = axios.create({
 // Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
+    // Log outgoing requests
+    console.log('[Axios] Outgoing request:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      params: config.params,
+      data: config.data
+    });
+
     // Add any auth tokens here if needed
     // const token = localStorage.getItem('token');
     // if (token) {
@@ -22,6 +31,7 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('[Axios] Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -29,6 +39,13 @@ axiosInstance.interceptors.request.use(
 // Response interceptor
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
+    // Log successful responses
+    console.log('[Axios] Response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.config.url,
+      dataSize: JSON.stringify(response.data).length
+    });
     return response;
   },
   (error: AxiosError<ApiError>) => {
@@ -38,19 +55,25 @@ axiosInstance.interceptors.response.use(
       details: error.response?.data?.details,
     };
 
+    // Enhanced error logging
+    console.error('[Axios] Response error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      message: apiError.message,
+      code: apiError.code,
+      details: apiError.details
+    });
+
     // Handle specific error cases
     if (error.response?.status === 401) {
-      // Handle unauthorized
-      console.error('Unauthorized access');
+      console.error('[Axios] Unauthorized access - authentication required');
     } else if (error.response?.status === 403) {
-      // Handle forbidden
-      console.error('Forbidden access');
+      console.error('[Axios] Forbidden access - insufficient permissions');
     } else if (error.response?.status === 404) {
-      // Handle not found
-      console.error('Resource not found');
+      console.error('[Axios] Resource not found');
     } else if (error.response?.status === 500) {
-      // Handle server error
-      console.error('Server error');
+      console.error('[Axios] Server error - internal server error');
     }
 
     return Promise.reject(apiError);

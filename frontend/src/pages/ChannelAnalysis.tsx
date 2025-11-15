@@ -31,47 +31,81 @@ export function ChannelAnalysis() {
 
   // Check for URL parameter on mount and auto-analyze
   useEffect(() => {
+    console.log('[ChannelAnalysis] Component mounted');
     const urlParam = searchParams.get('url');
     if (urlParam) {
+      console.log('[ChannelAnalysis] URL parameter detected, auto-analyzing:', urlParam);
       setChannelUrl(urlParam);
       // Trigger analysis after setting the URL
       setTimeout(() => {
         analyzeChannelWithUrl(urlParam);
       }, 100);
+    } else {
+      console.log('[ChannelAnalysis] No URL parameter, waiting for user input');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const analyzeChannelWithUrl = async (url: string) => {
     if (!url.trim()) {
+      console.warn('[ChannelAnalysis] Empty URL provided');
       setError('Please enter a YouTube channel URL');
       return;
     }
 
+    console.log('[ChannelAnalysis] Starting channel analysis', { url, maxResults });
     setIsLoading(true);
     setError('');
     setChannelData(null);
 
+    const startTime = performance.now();
+
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/channel/videos?url=${encodeURIComponent(url)}&maxResults=${maxResults}`
-      );
+      const apiUrl = `${API_BASE_URL}/api/channel/videos?url=${encodeURIComponent(url)}&maxResults=${maxResults}`;
+      console.log('[ChannelAnalysis] Fetching channel data from API:', apiUrl);
+
+      const response = await fetch(apiUrl);
+      const fetchTime = performance.now() - startTime;
+
+      console.log('[ChannelAnalysis] API response received', {
+        status: response.status,
+        statusText: response.statusText,
+        duration: `${fetchTime.toFixed(0)}ms`
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('[ChannelAnalysis] API error response:', errorData);
         throw new Error(errorData.message || 'Failed to fetch channel data');
       }
 
       const result = await response.json();
+      console.log('[ChannelAnalysis] API data parsed', {
+        success: result.success,
+        channelTitle: result.data?.channel?.title,
+        videoCount: result.data?.videos?.length
+      });
 
       if (!result.success) {
+        console.error('[ChannelAnalysis] Analysis failed:', result.message);
         throw new Error(result.message || 'Failed to analyze channel');
       }
 
+      console.log('[ChannelAnalysis] Channel data set successfully', {
+        channelId: result.data.channel.id,
+        totalVideos: result.data.totalVideos
+      });
       setChannelData(result.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      console.error('[ChannelAnalysis] Analysis failed with error:', errorMessage, err);
+      setError(errorMessage);
     } finally {
+      const totalTime = performance.now() - startTime;
+      console.log('[ChannelAnalysis] Analysis completed', {
+        duration: `${totalTime.toFixed(0)}ms`,
+        success: !error
+      });
       setIsLoading(false);
     }
   };
@@ -87,28 +121,61 @@ export function ChannelAnalysis() {
   };
 
   const generateRecommendations = async () => {
-    if (!channelData) return;
+    if (!channelData) {
+      console.warn('[ChannelAnalysis] Cannot generate recommendations - no channel data');
+      return;
+    }
+
+    console.log('[ChannelAnalysis] Generating recommendations', {
+      channelId: channelData.channel.id,
+      channelTitle: channelData.channel.title
+    });
 
     setIsGeneratingRecommendations(true);
     setError('');
 
+    const startTime = performance.now();
+
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/channels/${channelData.channel.id}/recommendations`,
-        { method: 'POST' }
-      );
+      const apiUrl = `${API_BASE_URL}/api/channels/${channelData.channel.id}/recommendations`;
+      console.log('[ChannelAnalysis] Calling recommendations API:', apiUrl);
+
+      const response = await fetch(apiUrl, { method: 'POST' });
+      const fetchTime = performance.now() - startTime;
+
+      console.log('[ChannelAnalysis] Recommendations API response received', {
+        status: response.status,
+        duration: `${fetchTime.toFixed(0)}ms`
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('[ChannelAnalysis] Recommendations API error:', errorData);
         throw new Error(errorData.message || 'Failed to generate recommendations');
       }
 
       const result = await response.json();
+      console.log('[ChannelAnalysis] Recommendations data received', {
+        recommendationCount: result.recommendations?.length || 0,
+        criticalCount: result.criticalCount,
+        highCount: result.highCount,
+        algorithmScore: result.algorithmScore?.overall
+      });
+
       setRecommendations(result.recommendations || []);
       setAlgorithmScore(result.algorithmScore || null);
+
+      console.log('[ChannelAnalysis] Recommendations state updated successfully');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate recommendations');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate recommendations';
+      console.error('[ChannelAnalysis] Recommendations generation failed:', errorMessage, err);
+      setError(errorMessage);
     } finally {
+      const totalTime = performance.now() - startTime;
+      console.log('[ChannelAnalysis] Recommendations generation completed', {
+        duration: `${totalTime.toFixed(0)}ms`,
+        success: !error
+      });
       setIsGeneratingRecommendations(false);
     }
   };
@@ -203,7 +270,10 @@ export function ChannelAnalysis() {
               {/* Tab Navigation */}
               <div className="flex bg-gray-100 border-b-2 border-gray-300">
                 <button
-                  onClick={() => setActiveTab('overview')}
+                  onClick={() => {
+                    console.log('[ChannelAnalysis] Tab changed to: overview');
+                    setActiveTab('overview');
+                  }}
                   className={`flex-1 px-6 py-4 text-base font-semibold transition-all ${
                     activeTab === 'overview'
                       ? 'bg-white text-primary-600 border-b-4 border-primary-600'
@@ -213,7 +283,10 @@ export function ChannelAnalysis() {
                   Overview
                 </button>
                 <button
-                  onClick={() => setActiveTab('keywords')}
+                  onClick={() => {
+                    console.log('[ChannelAnalysis] Tab changed to: keywords');
+                    setActiveTab('keywords');
+                  }}
                   className={`flex-1 px-6 py-4 text-base font-semibold transition-all ${
                     activeTab === 'keywords'
                       ? 'bg-white text-primary-600 border-b-4 border-primary-600'
@@ -223,7 +296,10 @@ export function ChannelAnalysis() {
                   Keywords & Tags
                 </button>
                 <button
-                  onClick={() => setActiveTab('performance')}
+                  onClick={() => {
+                    console.log('[ChannelAnalysis] Tab changed to: performance');
+                    setActiveTab('performance');
+                  }}
                   className={`flex-1 px-6 py-4 text-base font-semibold transition-all ${
                     activeTab === 'performance'
                       ? 'bg-white text-primary-600 border-b-4 border-primary-600'
@@ -233,7 +309,10 @@ export function ChannelAnalysis() {
                   Performance
                 </button>
                 <button
-                  onClick={() => setActiveTab('growth')}
+                  onClick={() => {
+                    console.log('[ChannelAnalysis] Tab changed to: growth');
+                    setActiveTab('growth');
+                  }}
                   className={`flex-1 px-6 py-4 text-base font-semibold transition-all ${
                     activeTab === 'growth'
                       ? 'bg-white text-primary-600 border-b-4 border-primary-600'
@@ -243,7 +322,10 @@ export function ChannelAnalysis() {
                   Growth Insights
                 </button>
                 <button
-                  onClick={() => setActiveTab('videos')}
+                  onClick={() => {
+                    console.log('[ChannelAnalysis] Tab changed to: videos');
+                    setActiveTab('videos');
+                  }}
                   className={`flex-1 px-6 py-4 text-base font-semibold transition-all ${
                     activeTab === 'videos'
                       ? 'bg-white text-primary-600 border-b-4 border-primary-600'
