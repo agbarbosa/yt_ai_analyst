@@ -9,6 +9,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
+import fs from 'fs';
 import { config } from './config';
 import logger, { logAPICall } from './utils/logger';
 import { youtubeAPI } from './services/youtube-api';
@@ -78,6 +79,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Serve static files from public directory
+// In Docker: public/ contains the built React app
+// In local: public/ contains static assets
 app.use(express.static(path.join(__dirname, '../public')));
 
 // ============================================================================
@@ -650,6 +653,94 @@ app.get('/api/channel/info', async (req: Request, res: Response) => {
       error: 'Failed to fetch channel info',
       message: (error as Error).message,
     });
+  }
+});
+
+// ============================================================================
+// SPA ROUTING
+// ============================================================================
+
+// Serve index.html for all non-API routes (SPA routing)
+// This must come BEFORE the 404 handler to allow React Router to handle client-side routes
+app.get('*', (req: Request, res: Response, next: NextFunction) => {
+  // Skip API routes and static files
+  if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
+    return next();
+  }
+
+  // Check for frontend build in multiple locations
+  // In Docker: frontend is built to public/ directory
+  // In local: frontend might be built to frontend/dist/
+  const dockerIndexPath = path.join(__dirname, '../public/index.html');
+  const localIndexPath = path.join(__dirname, '../frontend/dist/index.html');
+
+  let indexPath: string | null = null;
+
+  if (fs.existsSync(dockerIndexPath)) {
+    indexPath = dockerIndexPath;
+  } else if (fs.existsSync(localIndexPath)) {
+    indexPath = localIndexPath;
+  }
+
+  if (indexPath) {
+    // Production: serve the built React app
+    res.sendFile(indexPath);
+  } else {
+    // Development: provide helpful message
+    res.status(200).send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Development Mode</title>
+          <style>
+            body {
+              font-family: system-ui, -apple-system, sans-serif;
+              max-width: 800px;
+              margin: 50px auto;
+              padding: 20px;
+              line-height: 1.6;
+            }
+            code {
+              background: #f4f4f4;
+              padding: 2px 6px;
+              border-radius: 3px;
+              font-size: 14px;
+            }
+            .box {
+              background: #f8f9fa;
+              border-left: 4px solid #007bff;
+              padding: 15px;
+              margin: 20px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>🚧 Development Mode</h1>
+          <p>You're accessing the backend server directly. In development mode, the frontend runs separately.</p>
+
+          <div class="box">
+            <h2>To access the application:</h2>
+            <ol>
+              <li>Make sure the frontend dev server is running:
+                <br><code>cd frontend && npm run dev</code>
+              </li>
+              <li>Access the frontend at: <a href="http://localhost:5173">http://localhost:5173</a></li>
+            </ol>
+          </div>
+
+          <div class="box">
+            <h2>For production mode:</h2>
+            <ol>
+              <li>Build the frontend: <code>cd frontend && npm run build</code></li>
+              <li>Then restart this server</li>
+            </ol>
+          </div>
+
+          <p><strong>Current path:</strong> <code>${req.path}</code></p>
+          <p><strong>Backend API:</strong> Available at <a href="/health">/health</a></p>
+        </body>
+      </html>
+    `);
   }
 });
 
