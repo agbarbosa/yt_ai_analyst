@@ -365,6 +365,7 @@ app.get('/api/channel/videos', async (req: Request, res: Response) => {
           title: channelData.title,
           customUrl: channelData.customUrl || `@${(channelData.title || '').replace(/\s+/g, '')}`,
           description: channelData.description,
+          thumbnails: channelData.thumbnails,
           statistics: {
             viewCount: channelData.totalViews,
             subscriberCount: channelData.subscriberCount,
@@ -379,6 +380,7 @@ app.get('/api/channel/videos', async (req: Request, res: Response) => {
           description: video.description,
           publishedAt: video.publishedAt,
           thumbnailUrl: video.thumbnailUrl,
+          thumbnails: video.thumbnails,
           statistics: {
             viewCount: video.views || 0,
             likeCount: video.likes || 0,
