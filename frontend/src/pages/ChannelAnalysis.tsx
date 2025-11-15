@@ -6,11 +6,15 @@ import {
   KeywordsTab,
   PerformanceTab,
   AllVideosTab,
+  AlgorithmScore,
+  AIRecommendationsPanel,
+  GrowthInsightsTab,
+  QuickActionsPanel,
 } from '../components/channel';
 import type { ChannelAnalysisData } from '../types';
 import { API_BASE_URL } from '../config/constants';
 
-type TabType = 'overview' | 'keywords' | 'performance' | 'videos';
+type TabType = 'overview' | 'keywords' | 'performance' | 'videos' | 'growth';
 
 export function ChannelAnalysis() {
   const [channelUrl, setChannelUrl] = useState('');
@@ -19,6 +23,9 @@ export function ChannelAnalysis() {
   const [error, setError] = useState('');
   const [channelData, setChannelData] = useState<ChannelAnalysisData | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [algorithmScore, setAlgorithmScore] = useState<any | null>(null);
+  const [isGeneratingRecommendations, setIsGeneratingRecommendations] = useState(false);
 
   const analyzeChannel = async () => {
     if (!channelUrl.trim()) {
@@ -57,6 +64,33 @@ export function ChannelAnalysis() {
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       analyzeChannel();
+    }
+  };
+
+  const generateRecommendations = async () => {
+    if (!channelData) return;
+
+    setIsGeneratingRecommendations(true);
+    setError('');
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/channels/${channelData.channel.id}/recommendations`,
+        { method: 'POST' }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to generate recommendations');
+      }
+
+      const result = await response.json();
+      setRecommendations(result.recommendations || []);
+      setAlgorithmScore(result.algorithmScore || null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate recommendations');
+    } finally {
+      setIsGeneratingRecommendations(false);
     }
   };
 
@@ -124,6 +158,27 @@ export function ChannelAnalysis() {
               totalVideos={channelData.totalVideos}
             />
 
+            {/* Quick Actions Panel */}
+            <QuickActionsPanel
+              channelId={channelData.channel.id}
+              channelTitle={channelData.channel.title}
+              onGenerateRecommendations={generateRecommendations}
+              isGenerating={isGeneratingRecommendations}
+            />
+
+            {/* Algorithm Score */}
+            {algorithmScore && (
+              <AlgorithmScore score={algorithmScore} />
+            )}
+
+            {/* AI Recommendations Panel */}
+            {recommendations.length > 0 && (
+              <AIRecommendationsPanel
+                recommendations={recommendations}
+                isLoading={isGeneratingRecommendations}
+              />
+            )}
+
             {/* Insights Tabs */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               {/* Tab Navigation */}
@@ -159,6 +214,16 @@ export function ChannelAnalysis() {
                   Performance
                 </button>
                 <button
+                  onClick={() => setActiveTab('growth')}
+                  className={`flex-1 px-6 py-4 text-base font-semibold transition-all ${
+                    activeTab === 'growth'
+                      ? 'bg-white text-primary-600 border-b-4 border-primary-600'
+                      : 'text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Growth Insights
+                </button>
+                <button
                   onClick={() => setActiveTab('videos')}
                   className={`flex-1 px-6 py-4 text-base font-semibold transition-all ${
                     activeTab === 'videos'
@@ -174,6 +239,7 @@ export function ChannelAnalysis() {
               {activeTab === 'overview' && <OverviewTab videos={channelData.videos} />}
               {activeTab === 'keywords' && <KeywordsTab videos={channelData.videos} />}
               {activeTab === 'performance' && <PerformanceTab videos={channelData.videos} />}
+              {activeTab === 'growth' && <GrowthInsightsTab videos={channelData.videos} />}
               {activeTab === 'videos' && (
                 <AllVideosTab
                   videos={channelData.videos}

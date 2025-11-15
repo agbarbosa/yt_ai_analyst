@@ -3,3 +3,7 @@ export * from './OverviewTab';
 export * from './KeywordsTab';
 export * from './PerformanceTab';
 export * from './AllVideosTab';
+export * from './AlgorithmScore';
+export * from './AIRecommendationsPanel';
+export * from './GrowthInsightsTab';
+export * from './QuickActionsPanel';
