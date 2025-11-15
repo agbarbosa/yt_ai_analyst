@@ -9,6 +9,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
+import fs from 'fs';
 import { config } from './config';
 import logger, { logAPICall } from './utils/logger';
 import { youtubeAPI } from './services/youtube-api';
@@ -669,14 +670,69 @@ app.get('*', (req: Request, res: Response, next: NextFunction) => {
     return next();
   }
 
-  // Serve index.html for all other routes
+  // Check if frontend build exists (production mode)
   const indexPath = path.join(__dirname, '../frontend/dist/index.html');
-  res.sendFile(indexPath, (err) => {
-    if (err) {
-      // If index.html doesn't exist (development mode), continue to 404 handler
-      next();
-    }
-  });
+
+  if (fs.existsSync(indexPath)) {
+    // Production: serve the built React app
+    res.sendFile(indexPath);
+  } else {
+    // Development: provide helpful message
+    res.status(200).send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Development Mode</title>
+          <style>
+            body {
+              font-family: system-ui, -apple-system, sans-serif;
+              max-width: 800px;
+              margin: 50px auto;
+              padding: 20px;
+              line-height: 1.6;
+            }
+            code {
+              background: #f4f4f4;
+              padding: 2px 6px;
+              border-radius: 3px;
+              font-size: 14px;
+            }
+            .box {
+              background: #f8f9fa;
+              border-left: 4px solid #007bff;
+              padding: 15px;
+              margin: 20px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>🚧 Development Mode</h1>
+          <p>You're accessing the backend server directly. In development mode, the frontend runs separately.</p>
+
+          <div class="box">
+            <h2>To access the application:</h2>
+            <ol>
+              <li>Make sure the frontend dev server is running:
+                <br><code>cd frontend && npm run dev</code>
+              </li>
+              <li>Access the frontend at: <a href="http://localhost:5173">http://localhost:5173</a></li>
+            </ol>
+          </div>
+
+          <div class="box">
+            <h2>For production mode:</h2>
+            <ol>
+              <li>Build the frontend: <code>cd frontend && npm run build</code></li>
+              <li>Then restart this server</li>
+            </ol>
+          </div>
+
+          <p><strong>Current path:</strong> <code>${req.path}</code></p>
+          <p><strong>Backend API:</strong> Available at <a href="/health">/health</a></p>
+        </body>
+      </html>
+    `);
+  }
 });
 
 // ============================================================================
