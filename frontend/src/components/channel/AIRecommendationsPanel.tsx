@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ActionItem {
   action: string;
@@ -272,7 +274,9 @@ export function AIRecommendationsPanel({ recommendations, isLoading }: AIRecomme
                                 </span>
                                 <span className="text-xs text-gray-500">⏱️ {item.timeline}</span>
                               </div>
-                              <p className="text-sm text-gray-600">{item.details}</p>
+                              <div className="text-sm text-gray-600 prose prose-sm max-w-none markdown-content">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.details}</ReactMarkdown>
+                              </div>
                             </div>
                           </div>
                         ))}
