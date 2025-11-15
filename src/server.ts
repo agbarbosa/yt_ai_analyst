@@ -79,11 +79,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Serve static files from public directory
+// In Docker: public/ contains the built React app
+// In local: public/ contains static assets
 app.use(express.static(path.join(__dirname, '../public')));
-
-// Serve frontend build files in production
-const frontendDistPath = path.join(__dirname, '../frontend/dist');
-app.use(express.static(frontendDistPath));
 
 // ============================================================================
 // ROUTES
@@ -670,10 +668,21 @@ app.get('*', (req: Request, res: Response, next: NextFunction) => {
     return next();
   }
 
-  // Check if frontend build exists (production mode)
-  const indexPath = path.join(__dirname, '../frontend/dist/index.html');
+  // Check for frontend build in multiple locations
+  // In Docker: frontend is built to public/ directory
+  // In local: frontend might be built to frontend/dist/
+  const dockerIndexPath = path.join(__dirname, '../public/index.html');
+  const localIndexPath = path.join(__dirname, '../frontend/dist/index.html');
 
-  if (fs.existsSync(indexPath)) {
+  let indexPath: string | null = null;
+
+  if (fs.existsSync(dockerIndexPath)) {
+    indexPath = dockerIndexPath;
+  } else if (fs.existsSync(localIndexPath)) {
+    indexPath = localIndexPath;
+  }
+
+  if (indexPath) {
     // Production: serve the built React app
     res.sendFile(indexPath);
   } else {
