@@ -131,12 +131,25 @@ export class AlgorithmScorerService {
       satisfactionScore: avgSatisfaction,
     });
 
+    // Calculate opportunities based on average metrics across all videos
+    const avgVideo = this.calculateAverageVideoMetrics(videos);
+    const opportunities = this.identifyOpportunities(
+      {
+        ctrScore: avgCTR,
+        watchTimeScore: avgWatchTime,
+        engagementScore: avgEngagement,
+        satisfactionScore: avgSatisfaction,
+      },
+      avgVideo
+    );
+
     logger.info('Channel score calculated', {
       videoCount: videos.length,
       overall: Math.round(avgOverall * 100) / 100,
       grade,
       strengthsCount: strengths.length,
-      weaknessesCount: weaknesses.length
+      weaknessesCount: weaknesses.length,
+      opportunitiesCount: opportunities.length
     });
 
     return {
@@ -149,8 +162,106 @@ export class AlgorithmScorerService {
       },
       strengths,
       weaknesses,
-      opportunities: [],
+      opportunities,
       grade,
+    };
+  }
+
+  /**
+   * Calculate average video metrics across all videos in a channel
+   */
+  private calculateAverageVideoMetrics(videos: Video[]): Video {
+    if (videos.length === 0) {
+      // Return default video if no videos
+      return {
+        id: '',
+        videoId: '',
+        channelId: '',
+        title: '',
+        description: '',
+        publishedAt: new Date(),
+        duration: 0,
+        isShort: false,
+        thumbnailUrl: '',
+        views: 0,
+        likes: 0,
+        comments: 0,
+        ctr: 0,
+        avgPercentageViewed: 0,
+        retentionAt15Seconds: 0,
+        mainTrafficSource: 'browse',
+        trafficSources: {
+          search: 0,
+          browse: 0,
+          shorts: 0,
+          external: 0,
+          playlist: 0,
+          other: 0,
+        },
+        impressions: 0,
+        shares: 0,
+        subscribersGained: 0,
+        subscribersLost: 0,
+        retentionAt25Percent: 0,
+        retentionAt50Percent: 0,
+        retentionAt75Percent: 0,
+        retentionAt90Percent: 0,
+        avgViewDuration: 0,
+        tags: [],
+        keywords: [],
+        category: '',
+        createdAt: new Date(),
+        analyzedAt: new Date(),
+        lastUpdated: new Date(),
+      };
+    }
+
+    const avgDuration = videos.reduce((sum, v) => sum + v.duration, 0) / videos.length;
+    const avgViews = videos.reduce((sum, v) => sum + v.views, 0) / videos.length;
+    const avgLikes = videos.reduce((sum, v) => sum + v.likes, 0) / videos.length;
+    const avgComments = videos.reduce((sum, v) => sum + v.comments, 0) / videos.length;
+    const avgRetention15s = videos.reduce((sum, v) => sum + v.retentionAt15Seconds, 0) / videos.length;
+
+    return {
+      id: 'average',
+      videoId: 'average',
+      channelId: videos[0]?.channelId || '',
+      title: 'Average Video',
+      description: '',
+      publishedAt: new Date(),
+      duration: avgDuration,
+      isShort: false,
+      thumbnailUrl: '',
+      views: avgViews,
+      likes: avgLikes,
+      comments: avgComments,
+      ctr: videos.reduce((sum, v) => sum + v.ctr, 0) / videos.length,
+      avgPercentageViewed: videos.reduce((sum, v) => sum + v.avgPercentageViewed, 0) / videos.length,
+      retentionAt15Seconds: avgRetention15s,
+      mainTrafficSource: 'browse',
+      trafficSources: {
+        search: videos.reduce((sum, v) => sum + v.trafficSources.search, 0) / videos.length,
+        browse: videos.reduce((sum, v) => sum + v.trafficSources.browse, 0) / videos.length,
+        shorts: videos.reduce((sum, v) => sum + v.trafficSources.shorts, 0) / videos.length,
+        external: videos.reduce((sum, v) => sum + v.trafficSources.external, 0) / videos.length,
+        playlist: videos.reduce((sum, v) => sum + v.trafficSources.playlist, 0) / videos.length,
+        other: videos.reduce((sum, v) => sum + v.trafficSources.other, 0) / videos.length,
+      },
+      impressions: videos.reduce((sum, v) => sum + v.impressions, 0) / videos.length,
+      shares: videos.reduce((sum, v) => sum + v.shares, 0) / videos.length,
+      subscribersGained: videos.reduce((sum, v) => sum + v.subscribersGained, 0) / videos.length,
+      subscribersLost: videos.reduce((sum, v) => sum + v.subscribersLost, 0) / videos.length,
+      retentionAt25Percent: videos.reduce((sum, v) => sum + (v.retentionAt25Percent || 0), 0) / videos.length,
+      retentionAt50Percent: videos.reduce((sum, v) => sum + (v.retentionAt50Percent || 0), 0) / videos.length,
+      retentionAt75Percent: videos.reduce((sum, v) => sum + (v.retentionAt75Percent || 0), 0) / videos.length,
+      retentionAt90Percent: videos.reduce((sum, v) => sum + (v.retentionAt90Percent || 0), 0) / videos.length,
+      avgViewDuration: videos.reduce((sum, v) => sum + v.avgViewDuration, 0) / videos.length,
+      tags: [],
+      keywords: [],
+      category: videos[0]?.category || '',
+      createdAt: new Date(),
+      analyzedAt: new Date(),
+      lastUpdated: new Date(),
     };
   }
 
