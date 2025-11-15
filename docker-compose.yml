@@ -72,76 +72,22 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
-      # Application
-      NODE_ENV: ${NODE_ENV:-production}
-      PORT: ${PORT:-3000}
-      API_BASE_URL: ${API_BASE_URL:-http://localhost:3000}
-
-      # YouTube API
-      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
-      YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID}
-      YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET}
-      YOUTUBE_REDIRECT_URI: ${YOUTUBE_REDIRECT_URI:-http://localhost:3000/auth/callback}
-
-      # AI Services
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      GOOGLE_AI_API_KEY: ${GOOGLE_AI_API_KEY:-}
-
-      # Database - PostgreSQL
+      # Override container-specific values (hostnames for Docker network)
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      POSTGRES_DB: ${POSTGRES_DB:-yt_ai_analyst}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password_change_me}
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password_change_me}@postgres:5432/${POSTGRES_DB:-yt_ai_analyst}
 
-      # Database - MongoDB
       MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DB:-yt_ai_analyst}
-      MONGODB_DB: ${MONGODB_DB:-yt_ai_analyst}
 
-      # Redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password_change_me}
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_password_change_me}@redis:6379
 
-      # Security
-      JWT_SECRET: ${JWT_SECRET:-jwt_secret_change_me_minimum_32_characters_long}
-      JWT_EXPIRY: ${JWT_EXPIRY:-7d}
-      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
-
-      # Rate Limiting
-      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
-      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
-
-      # Logging
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      LOG_FILE_PATH: ${LOG_FILE_PATH:-./logs/app.log}
-
-      # Background Jobs
       BULL_REDIS_HOST: redis
       BULL_REDIS_PORT: 6379
-
-      # Data Collection
-      DATA_COLLECTION_INTERVAL_HOURS: ${DATA_COLLECTION_INTERVAL_HOURS:-6}
-      ANALYTICS_RETENTION_DAYS: ${ANALYTICS_RETENTION_DAYS:-90}
-
-      # AI Configuration
-      AI_PRIMARY_MODEL: ${AI_PRIMARY_MODEL:-claude-sonnet-4.5}
-      AI_TEMPERATURE_ANALYTICAL: ${AI_TEMPERATURE_ANALYTICAL:-0.3}
-      AI_TEMPERATURE_CREATIVE: ${AI_TEMPERATURE_CREATIVE:-0.6}
-      AI_MAX_TOKENS: ${AI_MAX_TOKENS:-4000}
-
-      # Features
-      ENABLE_SHORTS_ANALYSIS: ${ENABLE_SHORTS_ANALYSIS:-true}
-      ENABLE_COMPETITOR_ANALYSIS: ${ENABLE_COMPETITOR_ANALYSIS:-false}
-      ENABLE_REALTIME_UPDATES: ${ENABLE_REALTIME_UPDATES:-true}
-
-      # Monitoring
-      SENTRY_DSN: ${SENTRY_DSN:-}
-      DATADOG_API_KEY: ${DATADOG_API_KEY:-}
 
     ports:
       - "${APP_PORT:-3000}:3000"
