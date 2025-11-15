@@ -1,9 +1,10 @@
 /**
  * AI Service
- * Handles AI generation using OpenRouter, Anthropic Claude and other models
+ * Handles AI generation using OpenRouter, Anthropic Claude, OpenAI and other models
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { config } from '../config';
 import logger, { logAIGeneration } from '../utils/logger';
 import { AIModel } from '../types/models';
@@ -24,15 +25,23 @@ export interface AIGenerationResult {
 
 export class AIService {
   private anthropic?: Anthropic;
+  private openai?: OpenAI;
   private static instance: AIService;
 
   private constructor() {
-    // Initialize Anthropic client only if not using OpenRouter
-    if (config.ai.provider !== 'openrouter' && config.ai.anthropic.apiKey) {
+    // Initialize clients based on provider
+    if (config.ai.provider === 'anthropic' && config.ai.anthropic.apiKey) {
       this.anthropic = new Anthropic({
         apiKey: config.ai.anthropic.apiKey,
       });
     }
+
+    if (config.ai.provider === 'openai' && config.ai.openai.apiKey) {
+      this.openai = new OpenAI({
+        apiKey: config.ai.openai.apiKey,
+      });
+    }
+
     logger.info('AI service initialized', { provider: config.ai.provider });
   }
 
@@ -127,6 +136,72 @@ export class AIService {
   }
 
   /**
+   * Generate content using OpenAI
+   */
+  public async generateWithOpenAI(
+    prompt: string,
+    options: AIGenerationOptions = {}
+  ): Promise<AIGenerationResult> {
+    if (!this.openai) {
+      throw new Error('OpenAI client not initialized. Please set OPENAI_API_KEY and AI_PROVIDER=openai.');
+    }
+
+    const startTime = Date.now();
+
+    try {
+      const model = options.model || config.ai.openai.model;
+      const temperature = options.temperature ?? config.ai.openai.temperatureAnalytical;
+      const maxTokens = options.maxTokens || config.ai.openai.maxTokens;
+
+      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ];
+
+      if (options.systemPrompt) {
+        messages.unshift({
+          role: 'system',
+          content: options.systemPrompt,
+        });
+      }
+
+      const response = await this.openai.chat.completions.create({
+        model,
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+      });
+
+      const duration = Date.now() - startTime;
+      const content = response.choices[0]?.message?.content || '';
+
+      const tokensUsed = response.usage?.total_tokens || 0;
+
+      logAIGeneration(model, 'recommendation', tokensUsed, duration);
+
+      logger.info('OpenAI generation completed', {
+        model,
+        tokensUsed,
+        duration,
+        promptLength: prompt.length,
+        responseLength: content.length,
+      });
+
+      return {
+        content,
+        model,
+        tokensUsed,
+        duration,
+      };
+    } catch (error) {
+      logger.error('OpenAI generation failed', { error, prompt: prompt.substring(0, 100) });
+      throw error;
+    }
+  }
+
+  /**
    * Generate content using Claude
    */
   public async generateWithClaude(
@@ -201,8 +276,12 @@ export class AIService {
         // Use the configured provider
         if (config.ai.provider === 'openrouter') {
           return await this.generateWithOpenRouter(prompt, options);
-        } else {
+        } else if (config.ai.provider === 'openai') {
+          return await this.generateWithOpenAI(prompt, options);
+        } else if (config.ai.provider === 'anthropic') {
           return await this.generateWithClaude(prompt, options);
+        } else {
+          throw new Error(`Unsupported AI provider: ${config.ai.provider}`);
         }
       } catch (error) {
         lastError = error as Error;

@@ -42,12 +42,13 @@ const configSchema = z.object({
       temperatureCreative: z.coerce.number().min(0).max(1).default(0.6),
       maxTokens: z.coerce.number().int().positive().default(4000),
     }),
-    openai: z
-      .object({
-        apiKey: z.string().optional(),
-        model: z.string().default('gpt-4'),
-      })
-      .optional(),
+    openai: z.object({
+      apiKey: z.string().optional(),
+      model: z.string().default('gpt-4-turbo'),
+      temperatureAnalytical: z.coerce.number().min(0).max(2).default(0.3),
+      temperatureCreative: z.coerce.number().min(0).max(2).default(0.6),
+      maxTokens: z.coerce.number().int().positive().default(4000),
+    }),
     google: z
       .object({
         apiKey: z.string().optional(),
@@ -157,12 +158,13 @@ function loadConfig() {
           temperatureCreative: process.env.AI_TEMPERATURE_CREATIVE,
           maxTokens: process.env.AI_MAX_TOKENS,
         },
-        openai: process.env.OPENAI_API_KEY
-          ? {
-              apiKey: process.env.OPENAI_API_KEY,
-              model: 'gpt-4',
-            }
-          : undefined,
+        openai: {
+          apiKey: process.env.OPENAI_API_KEY,
+          model: process.env.OPENAI_MODEL || 'gpt-4-turbo',
+          temperatureAnalytical: process.env.AI_TEMPERATURE_ANALYTICAL,
+          temperatureCreative: process.env.AI_TEMPERATURE_CREATIVE,
+          maxTokens: process.env.AI_MAX_TOKENS,
+        },
         google: process.env.GOOGLE_AI_API_KEY
           ? {
               apiKey: process.env.GOOGLE_AI_API_KEY,
