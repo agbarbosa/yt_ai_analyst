@@ -107,7 +107,7 @@ export class AIService {
         throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
+      const data: any = await response.json();
       const duration = Date.now() - startTime;
       const content = data.choices[0]?.message?.content || '';
 
@@ -313,6 +313,10 @@ export class AIService {
     options: AIGenerationOptions = {},
     onChunk: (chunk: string) => void
   ): Promise<AIGenerationResult> {
+    if (!this.anthropic) {
+      throw new Error('Anthropic client not initialized. Streaming is only supported for Anthropic provider.');
+    }
+
     const startTime = Date.now();
 
     try {

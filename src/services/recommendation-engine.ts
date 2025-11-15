@@ -154,15 +154,16 @@ export class RecommendationEngine {
       });
 
       // Parse AI response into recommendations
+      const channelId = channel.channelId || 'unknown';
       const recommendations = this.parseRecommendationsFromAI(
         result.content,
-        channel.channelId,
+        channelId,
         'channel',
         result.model
       );
 
       logger.info('Channel recommendations generated', {
-        channelId: channel.channelId,
+        channelId: channelId,
         count: recommendations.length,
       });
 
