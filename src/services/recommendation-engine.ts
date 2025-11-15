@@ -10,6 +10,7 @@ import {
   Channel,
   AlgorithmScore,
   PerformanceGap,
+  AIModel,
 } from '../types/models';
 import { aiService } from './ai-service';
 import { algorithmScorer } from './algorithm-scorer';
