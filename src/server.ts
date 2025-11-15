@@ -389,9 +389,9 @@ app.get('/api/channel/videos', async (req: Request, res: Response) => {
     let channelIdentifier = url;
 
     const urlPatterns = [
-      /youtube\.com\/@([^\/\?]+)/,  // @handle
-      /youtube\.com\/channel\/([^\/\?]+)/,  // channel ID
-      /youtube\.com\/c\/([^\/\?]+)/,  // custom URL
+      /youtube\.com\/@([^/?]+)/,  // @handle
+      /youtube\.com\/channel\/([^/?]+)/,  // channel ID
+      /youtube\.com\/c\/([^/?]+)/,  // custom URL
       /^@(.+)$/  // Just @handle
     ];
 
