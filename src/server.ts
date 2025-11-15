@@ -119,11 +119,21 @@ app.get('/api/channels/:channelId/analysis', async (req: Request, res: Response)
     logger.info('Analyzing channel', { channelId });
 
     // Fetch channel data
+    logger.info('Fetching channel data from YouTube API', { channelId });
     const channelData = await youtubeAPI.getChannelData(channelId);
+    logger.info('Channel data retrieved', {
+      channelId,
+      title: channelData.title,
+      subscriberCount: channelData.subscriberCount
+    });
 
     // Fetch recent videos
+    logger.info('Fetching channel videos', { channelId, maxResults: 20 });
     const videoIds = await youtubeAPI.getChannelVideos(channelId, 20);
+    logger.info('Video IDs retrieved', { channelId, videoCount: videoIds.length });
+
     const videosData = await youtubeAPI.getVideosDataBatch(videoIds);
+    logger.info('Video details fetched', { channelId, videosCount: videosData.length });
 
     // Calculate algorithm score for channel
     const videos = videosData.map((v) => ({
@@ -146,7 +156,13 @@ app.get('/api/channels/:channelId/analysis', async (req: Request, res: Response)
       keywords: v.tags || [],
     })) as any[];
 
+    logger.info('Calculating algorithm score', { channelId, videoCount: videos.length });
     const algorithmScore = algorithmScorer.calculateChannelScore(videos);
+    logger.info('Algorithm score calculated', {
+      channelId,
+      overallScore: algorithmScore.overall,
+      grade: algorithmScore.grade
+    });
 
     res.json({
       channel: channelData,
@@ -154,6 +170,8 @@ app.get('/api/channels/:channelId/analysis', async (req: Request, res: Response)
       recentVideos: videos.slice(0, 10),
       videoCount: videos.length,
     });
+
+    logger.info('Channel analysis completed successfully', { channelId });
   } catch (error) {
     logger.error('Channel analysis failed', { error });
     res.status(500).json({
@@ -315,11 +333,15 @@ app.post('/api/channels/:channelId/recommendations', async (req: Request, res: R
     logger.info('Generating channel recommendations', { channelId });
 
     // Fetch channel data
+    logger.info('Fetching channel data for recommendations', { channelId });
     const channelData = await youtubeAPI.getChannelData(channelId);
+    logger.info('Channel data fetched', { channelId, title: channelData.title });
 
     // Fetch recent videos for analysis
+    logger.info('Fetching recent videos for analysis', { channelId, maxResults: 20 });
     const videoIds = await youtubeAPI.getChannelVideos(channelId, 20);
     const videosData = await youtubeAPI.getVideosDataBatch(videoIds);
+    logger.info('Videos data collected', { channelId, videoCount: videosData.length });
 
     // Enhance videos with mock analytics data
     const videos = videosData.map((v) => ({
@@ -342,13 +364,26 @@ app.post('/api/channels/:channelId/recommendations', async (req: Request, res: R
     })) as any[];
 
     // Calculate algorithm score
+    logger.info('Calculating algorithm score for recommendations', { channelId });
     const algorithmScore = algorithmScorer.calculateChannelScore(videos);
+    logger.info('Algorithm score calculated', {
+      channelId,
+      score: algorithmScore.overall,
+      grade: algorithmScore.grade
+    });
 
     // Generate recommendations using AI
+    logger.info('Generating AI recommendations', { channelId, videoCount: videos.length });
     const recommendations = await recommendationEngine.generateChannelRecommendations(
       channelData as any,
       videos
     );
+    logger.info('AI recommendations generated', {
+      channelId,
+      recommendationCount: recommendations.length,
+      criticalCount: recommendations.filter(r => r.priority === 'critical').length,
+      highCount: recommendations.filter(r => r.priority === 'high').length
+    });
 
     res.json({
       recommendations,
@@ -358,6 +393,8 @@ app.post('/api/channels/:channelId/recommendations', async (req: Request, res: R
       highCount: recommendations.filter(r => r.priority === 'high').length,
       generatedAt: new Date().toISOString(),
     });
+
+    logger.info('Channel recommendations completed successfully', { channelId });
   } catch (error) {
     logger.error('Channel recommendation generation failed', { error });
     res.status(500).json({
@@ -376,6 +413,7 @@ app.get('/api/channel/videos', async (req: Request, res: Response) => {
     const { url, maxResults = '50' } = req.query;
 
     if (!url || typeof url !== 'string') {
+      logger.warn('Missing URL parameter in channel videos request');
       return res.status(400).json({
         success: false,
         message: 'Query parameter "url" is required',
@@ -404,9 +442,11 @@ app.get('/api/channel/videos', async (req: Request, res: Response) => {
     }
 
     // Search for the channel
+    logger.info('Searching for channel', { identifier: channelIdentifier });
     const channelIds = await youtubeAPI.searchChannels(channelIdentifier, 1);
 
     if (channelIds.length === 0) {
+      logger.warn('Channel not found', { identifier: channelIdentifier, url });
       return res.status(404).json({
         success: false,
         message: 'Channel not found. Please check the URL and try again.',
@@ -414,15 +454,29 @@ app.get('/api/channel/videos', async (req: Request, res: Response) => {
     }
 
     const channelId = channelIds[0];
+    logger.info('Channel found', { channelId, identifier: channelIdentifier });
 
     // Fetch channel data
+    logger.info('Fetching channel data', { channelId });
     const channelData = await youtubeAPI.getChannelData(channelId);
+    logger.info('Channel data fetched', {
+      channelId,
+      title: channelData.title,
+      subscribers: channelData.subscriberCount,
+      videoCount: channelData.videoCount
+    });
 
     // Fetch videos
+    logger.info('Fetching channel videos', { channelId, maxResults: Number(maxResults) });
     const videoIds = await youtubeAPI.getChannelVideos(channelId, Number(maxResults));
+    logger.info('Video IDs fetched', { channelId, count: videoIds.length });
+
     const videosData = await youtubeAPI.getVideosDataBatch(videoIds);
+    logger.info('Video data batch fetched', { channelId, videosCount: videosData.length });
 
     // Format response for frontend
+    logger.info('Formatting response for frontend', { channelId, videoCount: videosData.length });
+
     return res.json({
       success: true,
       data: {

@@ -50,7 +50,14 @@ export class RecommendationEngine {
       logger.info('Generating video recommendations', { videoId: video.videoId });
 
       // Identify performance gaps
+      logger.info('Identifying performance gaps', { videoId: video.videoId });
       const gaps = this.identifyVideoPerformanceGaps(video, algorithmScore);
+      logger.info('Performance gaps identified', {
+        videoId: video.videoId,
+        gapCount: gaps.length,
+        criticalGaps: gaps.filter(g => g.severity === 'critical').length,
+        highGaps: gaps.filter(g => g.severity === 'high').length
+      });
 
       // Generate recommendations for each significant gap
       for (const gap of gaps) {
@@ -155,12 +162,27 @@ export class RecommendationEngine {
         YOUTUBE_ALGORITHM_EXPERT_SYSTEM_PROMPT
       );
 
+      logger.info('Calling AI service for recommendations', {
+        channelId,
+        promptLength: prompt.length,
+        temperature: 0.3,
+        maxTokens: 4000
+      });
+
       const result = await aiService.generateWithRetry(prompt, {
         temperature: 0.3,
         maxTokens: 4000,
       });
 
+      logger.info('AI service response received', {
+        channelId,
+        model: result.model,
+        contentLength: result.content.length,
+        tokensUsed: result.tokensUsed
+      });
+
       // Parse AI response into recommendations
+      logger.info('Parsing AI recommendations', { channelId });
       const recommendations = this.parseRecommendationsFromAI(
         result.content,
         channelId,

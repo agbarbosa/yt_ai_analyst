@@ -30,6 +30,8 @@ export class AlgorithmScorerService {
    * Calculate complete algorithm score for a video
    */
   public calculateVideoScore(video: Video): AlgorithmScore {
+    logger.info('Calculating video score', { videoId: video.videoId, title: video.title });
+
     const ctrScore = this.scoreCTR(video.ctr, video.mainTrafficSource);
     const watchTimeScore = this.scoreWatchTime(
       video.avgPercentageViewed,
@@ -45,6 +47,16 @@ export class AlgorithmScorerService {
 
     const overall = ctrScore + watchTimeScore + engagementScore + satisfactionScore;
     const grade = this.calculateGrade(overall);
+
+    logger.info('Video score calculated', {
+      videoId: video.videoId,
+      overall: Math.round(overall * 100) / 100,
+      grade,
+      ctr: Math.round(ctrScore * 100) / 100,
+      watchTime: Math.round(watchTimeScore * 100) / 100,
+      engagement: Math.round(engagementScore * 100) / 100,
+      satisfaction: Math.round(satisfactionScore * 100) / 100
+    });
 
     const strengths = this.identifyStrengths({
       ctrScore,
@@ -84,7 +96,10 @@ export class AlgorithmScorerService {
    * Calculate average algorithm score for a channel
    */
   public calculateChannelScore(videos: Video[]): AlgorithmScore {
+    logger.info('Calculating channel score', { videoCount: videos.length });
+
     if (videos.length === 0) {
+      logger.warn('No videos provided for channel score calculation');
       return this.createEmptyScore();
     }
 
@@ -114,6 +129,14 @@ export class AlgorithmScorerService {
       watchTimeScore: avgWatchTime,
       engagementScore: avgEngagement,
       satisfactionScore: avgSatisfaction,
+    });
+
+    logger.info('Channel score calculated', {
+      videoCount: videos.length,
+      overall: Math.round(avgOverall * 100) / 100,
+      grade,
+      strengthsCount: strengths.length,
+      weaknessesCount: weaknesses.length
     });
 
     return {
