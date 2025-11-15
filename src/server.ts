@@ -80,6 +80,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Serve frontend build files in production
+const frontendDistPath = path.join(__dirname, '../frontend/dist');
+app.use(express.static(frontendDistPath));
+
 // ============================================================================
 // ROUTES
 // ============================================================================
@@ -651,6 +655,28 @@ app.get('/api/channel/info', async (req: Request, res: Response) => {
       message: (error as Error).message,
     });
   }
+});
+
+// ============================================================================
+// SPA ROUTING
+// ============================================================================
+
+// Serve index.html for all non-API routes (SPA routing)
+// This must come BEFORE the 404 handler to allow React Router to handle client-side routes
+app.get('*', (req: Request, res: Response, next: NextFunction) => {
+  // Skip API routes and static files
+  if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
+    return next();
+  }
+
+  // Serve index.html for all other routes
+  const indexPath = path.join(__dirname, '../frontend/dist/index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      // If index.html doesn't exist (development mode), continue to 404 handler
+      next();
+    }
+  });
 });
 
 // ============================================================================
