@@ -52,6 +52,7 @@ export class YouTubeAPIService {
         title: snippet?.title || '',
         description: snippet?.description || '',
         customUrl: snippet?.customUrl || '',
+        thumbnails: snippet?.thumbnails as any, // YouTube API thumbnails object
         subscriberCount: parseInt(statistics?.subscriberCount || '0'),
         totalViews: parseInt(statistics?.viewCount || '0'),
         videoCount: parseInt(statistics?.videoCount || '0'),
@@ -161,6 +162,7 @@ export class YouTubeAPIService {
         duration,
         isShort,
         thumbnailUrl: snippet?.thumbnails?.maxres?.url || snippet?.thumbnails?.high?.url || '',
+        thumbnails: snippet?.thumbnails as any, // YouTube API thumbnails object
         views: parseInt(statistics?.viewCount || '0'),
         likes: parseInt(statistics?.likeCount || '0'),
         comments: parseInt(statistics?.commentCount || '0'),
@@ -208,6 +210,7 @@ export class YouTubeAPIService {
               duration,
               isShort: duration < 60,
               thumbnailUrl: snippet?.thumbnails?.maxres?.url || snippet?.thumbnails?.high?.url || '',
+              thumbnails: snippet?.thumbnails as any, // YouTube API thumbnails object
               views: parseInt(statistics?.viewCount || '0'),
               likes: parseInt(statistics?.likeCount || '0'),
               comments: parseInt(statistics?.commentCount || '0'),

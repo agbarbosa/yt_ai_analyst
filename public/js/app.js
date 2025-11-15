@@ -69,7 +69,7 @@ function displayChannelOverview() {
     const channel = channelData.channel;
 
     // Channel header
-    document.getElementById('channelThumbnail').src = channel.thumbnails.medium.url;
+    document.getElementById('channelThumbnail').src = getThumbnailUrl(channel.thumbnails, 'medium');
     document.getElementById('channelTitle').textContent = channel.title;
     document.getElementById('channelCustomUrl').textContent = channel.customUrl || channel.id;
     document.getElementById('channelDescription').textContent =
@@ -93,7 +93,7 @@ function displayOverviewTab() {
 
     const topVideosHTML = topVideos.map(video => `
         <div class="video-item" onclick="window.open('${video.url}', '_blank')">
-            <img src="${video.thumbnails.medium.url}" alt="${escapeHtml(video.title)}">
+            <img src="${getThumbnailUrl(video.thumbnails, 'medium')}" alt="${escapeHtml(video.title)}">
             <div class="video-item-info">
                 <div class="video-item-title">${escapeHtml(video.title)}</div>
                 <div class="video-item-stats">
@@ -405,7 +405,7 @@ function filterVideos() {
                 ${filtered.map(video => `
                     <tr>
                         <td>
-                            <img src="${video.thumbnails.default.url}" alt="Thumbnail" style="width: 80px; border-radius: 4px;">
+                            <img src="${getThumbnailUrl(video.thumbnails, 'default')}" alt="Thumbnail" style="width: 80px; border-radius: 4px;">
                         </td>
                         <td class="video-title-cell">
                             <a href="${video.url}" target="_blank" class="video-link">${escapeHtml(video.title)}</a>
@@ -503,6 +503,29 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+/**
+ * Safely get thumbnail URL with fallback logic
+ * @param {Object} thumbnails - Thumbnails object from YouTube API
+ * @param {string} preferredSize - Preferred thumbnail size (default: 'medium')
+ * @returns {string} - Thumbnail URL or empty string if not available
+ */
+function getThumbnailUrl(thumbnails, preferredSize = 'medium') {
+    if (!thumbnails) {
+        return '';
+    }
+
+    // Try preferred size first, then fallback to other sizes
+    const sizes = [preferredSize, 'high', 'medium', 'default', 'standard'];
+
+    for (const size of sizes) {
+        if (thumbnails[size] && thumbnails[size].url) {
+            return thumbnails[size].url;
+        }
+    }
+
+    return '';
 }
 
 // Allow Enter key to trigger analysis
