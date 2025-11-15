@@ -91,7 +91,13 @@ export class RecommendationEngine {
     recentVideos: Video[]
   ): Promise<Recommendation[]> {
     try {
-      logger.info('Generating channel recommendations', { channelId: channel.channelId });
+      // Ensure channelId is present
+      if (!channel.channelId) {
+        throw new Error('Channel ID is required for generating recommendations');
+      }
+
+      const channelId = channel.channelId;
+      logger.info('Generating channel recommendations', { channelId });
 
       // Calculate channel algorithm score
       const channelScore = algorithmScorer.calculateChannelScore(recentVideos);
@@ -163,14 +169,14 @@ export class RecommendationEngine {
       );
 
       logger.info('Channel recommendations generated', {
-        channelId: channelId,
+        channelId,
         count: recommendations.length,
       });
 
       return recommendations;
     } catch (error) {
       logger.error('Failed to generate channel recommendations', {
-        channelId: channel.channelId,
+        channelId: channel.channelId || 'unknown',
         error,
       });
       throw error;
