@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button, Input, Loading, ErrorMessage, Card } from '../components/common';
 import {
   ChannelOverview,
@@ -6,22 +7,43 @@ import {
   KeywordsTab,
   PerformanceTab,
   AllVideosTab,
+  AlgorithmScore,
+  AIRecommendationsPanel,
+  GrowthInsightsTab,
+  QuickActionsPanel,
 } from '../components/channel';
 import type { ChannelAnalysisData } from '../types';
 import { API_BASE_URL } from '../config/constants';
 
-type TabType = 'overview' | 'keywords' | 'performance' | 'videos';
+type TabType = 'overview' | 'keywords' | 'performance' | 'videos' | 'growth';
 
 export function ChannelAnalysis() {
+  const [searchParams] = useSearchParams();
   const [channelUrl, setChannelUrl] = useState('');
   const [maxResults, setMaxResults] = useState('50');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [channelData, setChannelData] = useState<ChannelAnalysisData | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [algorithmScore, setAlgorithmScore] = useState<any | null>(null);
+  const [isGeneratingRecommendations, setIsGeneratingRecommendations] = useState(false);
 
-  const analyzeChannel = async () => {
-    if (!channelUrl.trim()) {
+  // Check for URL parameter on mount and auto-analyze
+  useEffect(() => {
+    const urlParam = searchParams.get('url');
+    if (urlParam) {
+      setChannelUrl(urlParam);
+      // Trigger analysis after setting the URL
+      setTimeout(() => {
+        analyzeChannelWithUrl(urlParam);
+      }, 100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const analyzeChannelWithUrl = async (url: string) => {
+    if (!url.trim()) {
       setError('Please enter a YouTube channel URL');
       return;
     }
@@ -32,7 +54,7 @@ export function ChannelAnalysis() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/channel/videos?url=${encodeURIComponent(channelUrl)}&maxResults=${maxResults}`
+        `${API_BASE_URL}/api/channel/videos?url=${encodeURIComponent(url)}&maxResults=${maxResults}`
       );
 
       if (!response.ok) {
@@ -54,9 +76,40 @@ export function ChannelAnalysis() {
     }
   };
 
+  const analyzeChannel = async () => {
+    await analyzeChannelWithUrl(channelUrl);
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       analyzeChannel();
+    }
+  };
+
+  const generateRecommendations = async () => {
+    if (!channelData) return;
+
+    setIsGeneratingRecommendations(true);
+    setError('');
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/channels/${channelData.channel.id}/recommendations`,
+        { method: 'POST' }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to generate recommendations');
+      }
+
+      const result = await response.json();
+      setRecommendations(result.recommendations || []);
+      setAlgorithmScore(result.algorithmScore || null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate recommendations');
+    } finally {
+      setIsGeneratingRecommendations(false);
     }
   };
 
@@ -124,6 +177,27 @@ export function ChannelAnalysis() {
               totalVideos={channelData.totalVideos}
             />
 
+            {/* Quick Actions Panel */}
+            <QuickActionsPanel
+              channelId={channelData.channel.id}
+              channelTitle={channelData.channel.title}
+              onGenerateRecommendations={generateRecommendations}
+              isGenerating={isGeneratingRecommendations}
+            />
+
+            {/* Algorithm Score */}
+            {algorithmScore && (
+              <AlgorithmScore score={algorithmScore} />
+            )}
+
+            {/* AI Recommendations Panel */}
+            {recommendations.length > 0 && (
+              <AIRecommendationsPanel
+                recommendations={recommendations}
+                isLoading={isGeneratingRecommendations}
+              />
+            )}
+
             {/* Insights Tabs */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               {/* Tab Navigation */}
@@ -159,6 +233,16 @@ export function ChannelAnalysis() {
                   Performance
                 </button>
                 <button
+                  onClick={() => setActiveTab('growth')}
+                  className={`flex-1 px-6 py-4 text-base font-semibold transition-all ${
+                    activeTab === 'growth'
+                      ? 'bg-white text-primary-600 border-b-4 border-primary-600'
+                      : 'text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Growth Insights
+                </button>
+                <button
                   onClick={() => setActiveTab('videos')}
                   className={`flex-1 px-6 py-4 text-base font-semibold transition-all ${
                     activeTab === 'videos'
@@ -174,6 +258,7 @@ export function ChannelAnalysis() {
               {activeTab === 'overview' && <OverviewTab videos={channelData.videos} />}
               {activeTab === 'keywords' && <KeywordsTab videos={channelData.videos} />}
               {activeTab === 'performance' && <PerformanceTab videos={channelData.videos} />}
+              {activeTab === 'growth' && <GrowthInsightsTab videos={channelData.videos} />}
               {activeTab === 'videos' && (
                 <AllVideosTab
                   videos={channelData.videos}

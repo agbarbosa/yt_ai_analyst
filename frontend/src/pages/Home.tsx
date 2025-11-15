@@ -12,8 +12,8 @@ export function Home() {
     if (!url) return;
 
     if (analysisType === 'channel') {
-      // For channel analysis, go to the channel analysis page
-      navigate('/channel-analysis');
+      // For channel analysis, go to the channel analysis page with URL parameter
+      navigate(`/channel-analysis?url=${encodeURIComponent(url)}`);
     } else {
       // Extract ID from URL or use directly if it's just an ID
       const id = url.includes('youtube.com') || url.includes('youtu.be')

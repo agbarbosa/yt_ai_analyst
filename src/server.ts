@@ -302,6 +302,69 @@ app.post('/api/videos/:videoId/optimize-title', async (req: Request, res: Respon
 });
 
 /**
+ * POST /api/channels/:channelId/recommendations
+ * Generate AI-powered recommendations for a channel
+ */
+app.post('/api/channels/:channelId/recommendations', async (req: Request, res: Response) => {
+  try {
+    const { channelId } = req.params;
+
+    logger.info('Generating channel recommendations', { channelId });
+
+    // Fetch channel data
+    const channelData = await youtubeAPI.getChannelData(channelId);
+
+    // Fetch recent videos for analysis
+    const videoIds = await youtubeAPI.getChannelVideos(channelId, 20);
+    const videosData = await youtubeAPI.getVideosDataBatch(videoIds);
+
+    // Enhance videos with mock analytics data
+    const videos = videosData.map((v) => ({
+      ...v,
+      ctr: Math.random() * 10,
+      avgPercentageViewed: 30 + Math.random() * 40,
+      retentionAt15Seconds: 60 + Math.random() * 30,
+      mainTrafficSource: 'browse' as const,
+      trafficSources: youtubeAPI.getMockTrafficSources(),
+      impressions: v.views! * (10 + Math.random() * 10),
+      shares: Math.floor(v.views! * 0.01),
+      subscribersGained: Math.floor(v.views! * 0.002),
+      subscribersLost: Math.floor(v.views! * 0.0005),
+      retentionAt25Percent: 40 + Math.random() * 30,
+      retentionAt50Percent: 30 + Math.random() * 30,
+      retentionAt75Percent: 20 + Math.random() * 25,
+      retentionAt90Percent: 10 + Math.random() * 20,
+      avgViewDuration: Math.floor(v.duration! * (0.3 + Math.random() * 0.3)),
+      keywords: v.tags || [],
+    })) as any[];
+
+    // Calculate algorithm score
+    const algorithmScore = algorithmScorer.calculateChannelScore(videos);
+
+    // Generate recommendations using AI
+    const recommendations = await recommendationEngine.generateChannelRecommendations(
+      channelData as any,
+      videos
+    );
+
+    res.json({
+      recommendations,
+      algorithmScore,
+      totalCount: recommendations.length,
+      criticalCount: recommendations.filter(r => r.priority === 'critical').length,
+      highCount: recommendations.filter(r => r.priority === 'high').length,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Channel recommendation generation failed', { error });
+    res.status(500).json({
+      error: 'Failed to generate channel recommendations',
+      message: (error as Error).message,
+    });
+  }
+});
+
+/**
  * GET /api/channel/videos
  * Fetch channel data and videos by URL (for frontend)
  */
