@@ -40,7 +40,7 @@ export function QuickActionsPanel({
               <Button
                 onClick={onGenerateRecommendations}
                 disabled={isGenerating}
-                className="w-full bg-white text-primary-600 hover:bg-gray-100 disabled:bg-gray-300"
+                className="w-full !bg-white !text-primary-600 hover:!bg-gray-100 disabled:!bg-gray-300 disabled:!text-gray-600"
               >
                 {isGenerating ? 'Generating...' : 'Generate Insights'}
               </Button>
@@ -59,7 +59,7 @@ export function QuickActionsPanel({
               </p>
               <Button
                 onClick={handleDownloadReport}
-                className="w-full bg-white text-primary-600 hover:bg-gray-100"
+                className="w-full !bg-white !text-primary-600 hover:!bg-gray-100"
               >
                 Download PDF
               </Button>
@@ -78,7 +78,7 @@ export function QuickActionsPanel({
               </p>
               <Button
                 onClick={handleScheduleAnalysis}
-                className="w-full bg-white text-primary-600 hover:bg-gray-100"
+                className="w-full !bg-white !text-primary-600 hover:!bg-gray-100"
               >
                 Schedule
               </Button>
