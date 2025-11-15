@@ -87,7 +87,7 @@ export class RecommendationEngine {
    * Generate recommendations for a channel
    */
   public async generateChannelRecommendations(
-    channel: Channel,
+    channel: Channel | Partial<Channel>,
     recentVideos: Video[]
   ): Promise<Recommendation[]> {
     try {
@@ -96,38 +96,47 @@ export class RecommendationEngine {
       // Calculate channel algorithm score
       const channelScore = algorithmScorer.calculateChannelScore(recentVideos);
 
+      // Calculate average metrics from recent videos if not provided
+      const avgCTR = channel.avgCTR ?? this.calculateAvgCTR(recentVideos);
+      const avgRetentionRate = channel.avgRetentionRate ?? this.calculateAvgRetention(recentVideos);
+      const avgEngagementRate = channel.avgEngagementRate ?? this.calculateAvgEngagement(recentVideos);
+      const primaryTopics = channel.primaryTopics ?? [];
+      const uploadFrequency = channel.uploadFrequency ?? 'irregular';
+      const createdAt = channel.createdAt ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000); // Default to 1 year ago
+      const shortsPercentage = channel.shortsPercentage ?? this.calculateShortsPercentage(recentVideos);
+
       // Build prompt with channel data
       const promptData = {
-        channelName: channel.title,
-        subscriberCount: channel.subscriberCount.toLocaleString(),
-        videoCount: channel.videoCount,
-        niche: channel.primaryTopics[0] || 'general',
-        uploadFrequency: channel.uploadFrequency || 'irregular',
-        channelAge: this.calculateChannelAge(channel.createdAt),
+        channelName: channel.title || 'Unknown Channel',
+        subscriberCount: (channel.subscriberCount ?? 0).toLocaleString(),
+        videoCount: channel.videoCount ?? recentVideos.length,
+        niche: primaryTopics[0] || 'general',
+        uploadFrequency: uploadFrequency,
+        channelAge: this.calculateChannelAge(createdAt),
         algorithmScore: channelScore.overall,
         scoreGrade: channelScore.grade,
-        avgCTR: channel.avgCTR,
+        avgCTR: avgCTR,
         ctrBenchmark: 5.0,
-        ctrGap: (5.0 - channel.avgCTR).toFixed(1),
-        ctrStatus: channel.avgCTR >= 5 ? '✓ Above benchmark' : '✗ Below benchmark',
-        avgRetention: channel.avgRetentionRate,
+        ctrGap: (5.0 - avgCTR).toFixed(1),
+        ctrStatus: avgCTR >= 5 ? '✓ Above benchmark' : '✗ Below benchmark',
+        avgRetention: avgRetentionRate,
         retentionBenchmark: 50.0,
-        retentionGap: (50.0 - channel.avgRetentionRate).toFixed(1),
+        retentionGap: (50.0 - avgRetentionRate).toFixed(1),
         retentionStatus:
-          channel.avgRetentionRate >= 50 ? '✓ Above benchmark' : '✗ Below benchmark',
-        avgEngagement: channel.avgEngagementRate,
+          avgRetentionRate >= 50 ? '✓ Above benchmark' : '✗ Below benchmark',
+        avgEngagement: avgEngagementRate,
         engagementBenchmark: 5.0,
-        engagementGap: (5.0 - channel.avgEngagementRate).toFixed(1),
+        engagementGap: (5.0 - avgEngagementRate).toFixed(1),
         engagementStatus:
-          channel.avgEngagementRate >= 5 ? '✓ Above benchmark' : '✗ Below benchmark',
+          avgEngagementRate >= 5 ? '✓ Above benchmark' : '✗ Below benchmark',
         subGrowthRate: '0', // TODO: Calculate from historical data
         viewsGrowthRate: '0',
         growthTrend: 'stable',
-        topTopics: this.formatTopics(channel.primaryTopics),
+        topTopics: this.formatTopics(primaryTopics),
         weakTopics: 'To be analyzed',
-        longformPercentage: (100 - channel.shortsPercentage).toFixed(1),
+        longformPercentage: (100 - shortsPercentage).toFixed(1),
         midformPercentage: '0',
-        shortsPercentage: channel.shortsPercentage.toFixed(1),
+        shortsPercentage: shortsPercentage.toFixed(1),
         topVideos: this.formatTopVideos(recentVideos.slice(0, 5)),
         bottomVideos: this.formatBottomVideos(recentVideos.slice(-5)),
       };
@@ -490,6 +499,60 @@ export class RecommendationEngine {
     const matches = [...content.matchAll(titlePattern)];
 
     return matches.map((match) => match[1].trim()).filter((title) => title.length > 0);
+  }
+
+  /**
+   * Helper: Calculate average CTR from videos
+   */
+  private calculateAvgCTR(videos: Partial<Video>[]): number {
+    if (videos.length === 0) return 0;
+    const validVideos = videos.filter(v => v.ctr !== undefined);
+    if (validVideos.length === 0) return 0;
+    const sum = validVideos.reduce((acc, v) => acc + (v.ctr || 0), 0);
+    return sum / validVideos.length;
+  }
+
+  /**
+   * Helper: Calculate average retention from videos
+   */
+  private calculateAvgRetention(videos: Partial<Video>[]): number {
+    if (videos.length === 0) return 0;
+    const validVideos = videos.filter(v => v.avgPercentageViewed !== undefined);
+    if (validVideos.length === 0) return 0;
+    const sum = validVideos.reduce((acc, v) => acc + (v.avgPercentageViewed || 0), 0);
+    return sum / validVideos.length;
+  }
+
+  /**
+   * Helper: Calculate average engagement rate from videos
+   */
+  private calculateAvgEngagement(videos: Partial<Video>[]): number {
+    if (videos.length === 0) return 0;
+    const validVideos = videos.filter(v =>
+      v.views !== undefined &&
+      v.likes !== undefined &&
+      v.comments !== undefined &&
+      v.views > 0
+    );
+    if (validVideos.length === 0) return 0;
+
+    const engagementRates = validVideos.map(v => {
+      const shares = v.shares || 0;
+      const engagement = ((v.likes! + v.comments! + shares) / v.views!) * 100;
+      return engagement;
+    });
+
+    const sum = engagementRates.reduce((acc, rate) => acc + rate, 0);
+    return sum / engagementRates.length;
+  }
+
+  /**
+   * Helper: Calculate shorts percentage from videos
+   */
+  private calculateShortsPercentage(videos: Partial<Video>[]): number {
+    if (videos.length === 0) return 0;
+    const shortsCount = videos.filter(v => v.isShort === true).length;
+    return (shortsCount / videos.length) * 100;
   }
 }
 
