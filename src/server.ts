@@ -427,7 +427,7 @@ app.get('/api/channel/videos', async (req: Request, res: Response) => {
       success: true,
       data: {
         channel: {
-          id: channelData.id,
+          id: channelData.channelId,
           title: channelData.title,
           customUrl: channelData.customUrl || `@${(channelData.title || '').replace(/\s+/g, '')}`,
           description: channelData.description,
