@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button, Input, Loading, ErrorMessage, Card } from '../components/common';
 import {
   ChannelOverview,
@@ -17,6 +18,7 @@ import { API_BASE_URL } from '../config/constants';
 type TabType = 'overview' | 'keywords' | 'performance' | 'videos' | 'growth';
 
 export function ChannelAnalysis() {
+  const [searchParams] = useSearchParams();
   const [channelUrl, setChannelUrl] = useState('');
   const [maxResults, setMaxResults] = useState('50');
   const [isLoading, setIsLoading] = useState(false);
@@ -27,8 +29,21 @@ export function ChannelAnalysis() {
   const [algorithmScore, setAlgorithmScore] = useState<any | null>(null);
   const [isGeneratingRecommendations, setIsGeneratingRecommendations] = useState(false);
 
-  const analyzeChannel = async () => {
-    if (!channelUrl.trim()) {
+  // Check for URL parameter on mount and auto-analyze
+  useEffect(() => {
+    const urlParam = searchParams.get('url');
+    if (urlParam) {
+      setChannelUrl(urlParam);
+      // Trigger analysis after setting the URL
+      setTimeout(() => {
+        analyzeChannelWithUrl(urlParam);
+      }, 100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const analyzeChannelWithUrl = async (url: string) => {
+    if (!url.trim()) {
       setError('Please enter a YouTube channel URL');
       return;
     }
@@ -39,7 +54,7 @@ export function ChannelAnalysis() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/channel/videos?url=${encodeURIComponent(channelUrl)}&maxResults=${maxResults}`
+        `${API_BASE_URL}/api/channel/videos?url=${encodeURIComponent(url)}&maxResults=${maxResults}`
       );
 
       if (!response.ok) {
@@ -59,6 +74,10 @@ export function ChannelAnalysis() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const analyzeChannel = async () => {
+    await analyzeChannelWithUrl(channelUrl);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
