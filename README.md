@@ -120,6 +120,46 @@ cp .env.docker .env
 
 📖 **Complete Docker Guide**: See [DOCKER_SETUP.md](DOCKER_SETUP.md)
 
+## 🎨 Frontend
+
+The project includes a modern React frontend with a comprehensive Channel SEO Analyst interface.
+
+### React Frontend Features
+
+- **Channel Analysis UI**: Complete channel analysis with search interface
+- **Interactive Tabs**: Overview, Keywords & Tags, Performance, All Videos
+- **Data Visualization**: Engagement metrics, tag frequency analysis
+- **Search & Export**: Video search and CSV export functionality
+- **Responsive Design**: Mobile-friendly with gradient backgrounds
+
+### Development
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server (runs on port 5173)
+npm run dev
+
+# Build for production
+npm run build
+```
+
+### Docker Integration
+
+The Dockerfile automatically builds the React frontend and serves it through the Express backend:
+
+1. **Frontend Build Stage**: Compiles React app with Vite
+2. **Backend Build Stage**: Compiles TypeScript backend
+3. **Production Stage**: Serves React build from `/public` folder
+
+When running with Docker, the React app is available at the main application URL (`http://localhost:3000`).
+
+📖 **Frontend Documentation**: See [frontend/README.md](frontend/README.md)
+
 ## 📡 API Endpoints
 
 ### Channel Analysis
