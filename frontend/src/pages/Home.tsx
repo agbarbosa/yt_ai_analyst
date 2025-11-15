@@ -11,15 +11,15 @@ export function Home() {
   const handleAnalyze = () => {
     if (!url) return;
 
-    // Extract ID from URL or use directly if it's just an ID
-    const id = url.includes('youtube.com') || url.includes('youtu.be')
-      ? url.split('/').pop()?.split('?')[0] || url
-      : url;
-
-    if (analysisType === 'video') {
-      navigate(`/video/${id}`);
+    if (analysisType === 'channel') {
+      // For channel analysis, go to the channel analysis page
+      navigate('/channel-analysis');
     } else {
-      navigate(`/channel/${id}`);
+      // Extract ID from URL or use directly if it's just an ID
+      const id = url.includes('youtube.com') || url.includes('youtu.be')
+        ? url.split('/').pop()?.split('?')[0] || url
+        : url;
+      navigate(`/video/${id}`);
     }
   };
 

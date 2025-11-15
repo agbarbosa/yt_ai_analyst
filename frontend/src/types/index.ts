@@ -1,3 +1,58 @@
+export interface Thumbnail {
+  url: string;
+  width?: number;
+  height?: number;
+}
+
+export interface Thumbnails {
+  default?: Thumbnail;
+  medium?: Thumbnail;
+  high?: Thumbnail;
+  standard?: Thumbnail;
+  maxres?: Thumbnail;
+  [key: string]: Thumbnail | undefined;
+}
+
+export interface VideoStatistics {
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+}
+
+export interface ChannelStatistics {
+  viewCount: number;
+  subscriberCount: number;
+  videoCount: number;
+}
+
+export interface VideoDetails {
+  id: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  thumbnails: Thumbnails;
+  url: string;
+  duration: string;
+  tags: string[];
+  statistics: VideoStatistics;
+}
+
+export interface ChannelDetails {
+  id: string;
+  title: string;
+  description: string;
+  customUrl?: string;
+  thumbnails: Thumbnails;
+  statistics: ChannelStatistics;
+}
+
+export interface ChannelAnalysisData {
+  channel: ChannelDetails;
+  videos: VideoDetails[];
+  totalVideos: number;
+}
+
+// Legacy types for backward compatibility
 export interface Video {
   id: string;
   title: string;

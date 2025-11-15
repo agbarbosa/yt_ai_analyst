@@ -17,6 +17,12 @@ export function Header() {
 
           <nav className="hidden md:flex space-x-8">
             <Link
+              to="/channel-analysis"
+              className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Channel Analysis
+            </Link>
+            <Link
               to="/dashboard"
               className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
             >

@@ -1,11 +1,15 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Layout } from './components/layout';
-import { Home, Dashboard, NotFound } from './pages';
+import { Home, Dashboard, ChannelAnalysis, NotFound } from './pages';
 
 const router = createBrowserRouter([
   {
     path: '/',
     element: <Layout><Home /></Layout>,
+  },
+  {
+    path: '/channel-analysis',
+    element: <ChannelAnalysis />,
   },
   {
     path: '/dashboard',
