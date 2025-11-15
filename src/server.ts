@@ -373,8 +373,8 @@ app.get('/api/channel/videos', async (req: Request, res: Response) => {
         },
         totalVideos: videosData.length,
         videos: videosData.map(video => ({
-          id: video.id,
-          url: `https://www.youtube.com/watch?v=${video.id}`,
+          id: video.videoId,
+          url: `https://www.youtube.com/watch?v=${video.videoId}`,
           title: video.title,
           description: video.description,
           publishedAt: video.publishedAt,
