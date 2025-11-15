@@ -6,6 +6,18 @@
  */
 
 // ============================================================================
+// SHARED MODELS
+// ============================================================================
+
+export interface YouTubeThumbnails {
+  default?: { url: string; width?: number; height?: number };
+  medium?: { url: string; width?: number; height?: number };
+  high?: { url: string; width?: number; height?: number };
+  standard?: { url: string; width?: number; height?: number };
+  maxres?: { url: string; width?: number; height?: number };
+}
+
+// ============================================================================
 // CHANNEL MODELS
 // ============================================================================
 
@@ -15,6 +27,7 @@ export interface Channel {
   title: string;
   description?: string;
   customUrl?: string;
+  thumbnails?: YouTubeThumbnails;
 
   // Statistics
   subscriberCount: number;
@@ -88,6 +101,7 @@ export interface Video {
   // Thumbnail
   thumbnailUrl: string;
   thumbnailQuality?: 'low' | 'medium' | 'high' | 'custom';
+  thumbnails?: YouTubeThumbnails;
 
   // Performance Metrics
   views: number;
