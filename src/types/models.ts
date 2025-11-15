@@ -247,7 +247,15 @@ export type RecommendationStatus =
   | 'dismissed'
   | 'expired';
 
-export type AIModel = 'claude-sonnet-4.5' | 'claude-opus-4' | 'gpt-4' | 'gemini-pro';
+export type AIModel =
+  | 'claude-sonnet-4.5'
+  | 'claude-opus-4'
+  | 'gpt-4'
+  | 'gpt-4-turbo'
+  | 'gemini-pro'
+  | 'anthropic/claude-sonnet-4-20250514'
+  | 'anthropic/claude-opus-4-20250514'
+  | string; // Allow other model identifiers for flexibility
 
 export interface ActionItem {
   action: string; // What to do

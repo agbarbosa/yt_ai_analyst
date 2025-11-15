@@ -20,6 +20,7 @@ import {
 } from '../ai/prompts';
 import logger from '../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
+import { config } from '../config';
 
 export class RecommendationEngine {
   private static instance: RecommendationEngine;
@@ -154,7 +155,6 @@ export class RecommendationEngine {
       );
 
       const result = await aiService.generateWithRetry(prompt, {
-        model: 'claude-sonnet-4.5',
         temperature: 0.3,
         maxTokens: 4000,
       });
@@ -307,7 +307,7 @@ export class RecommendationEngine {
         confidence: 0.7,
         timeframe: '2-4 weeks',
       },
-      generatedBy: 'claude-sonnet-4.5',
+      generatedBy: this.getConfiguredModel(),
       reasoning: `Identified performance gap: ${gap.description}`,
       prompt: '',
       confidence: 0.7,
@@ -359,7 +359,7 @@ export class RecommendationEngine {
         confidence: 0.8,
         timeframe: '1-2 weeks',
       },
-      generatedBy: 'claude-sonnet-4.5',
+      generatedBy: this.getConfiguredModel(),
       reasoning: 'First 15 seconds are critical decision point for 70% of viewers in 2025 algorithm',
       prompt: '',
       confidence: 0.85,
@@ -559,6 +559,24 @@ export class RecommendationEngine {
     if (videos.length === 0) return 0;
     const shortsCount = videos.filter(v => v.isShort === true).length;
     return (shortsCount / videos.length) * 100;
+  }
+
+  /**
+   * Helper: Get the configured AI model based on provider
+   */
+  private getConfiguredModel(): AIModel {
+    switch (config.ai.provider) {
+      case 'openrouter':
+        return config.ai.openrouter.model as AIModel;
+      case 'anthropic':
+        return config.ai.anthropic.model as AIModel;
+      case 'openai':
+        return config.ai.openai.model as AIModel;
+      case 'google':
+        return (config.ai.google?.model || 'gemini-pro') as AIModel;
+      default:
+        return 'claude-sonnet-4.5';
+    }
   }
 }
 
