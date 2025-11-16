@@ -270,6 +270,11 @@ export class AlgorithmScorerService {
    * Benchmark: >10% for search, >5% for browse
    */
   private scoreCTR(ctr: number, trafficSource: string): number {
+    // Handle invalid input
+    if (isNaN(ctr) || ctr < 0) {
+      return 0;
+    }
+
     const benchmark = trafficSource === 'search' ? 10 : 5;
     const percentage = (ctr / benchmark) * 100;
 
@@ -283,7 +288,7 @@ export class AlgorithmScorerService {
       score = Math.min(score * 1.1, 25);
     }
 
-    return Math.max(0, score);
+    return isNaN(score) ? 0 : Math.max(0, score);
   }
 
   /**
@@ -299,6 +304,11 @@ export class AlgorithmScorerService {
     videoDuration: number,
     retention15s: number
   ): number {
+    // Handle edge case: video with 0 duration
+    if (videoDuration === 0 || isNaN(videoDuration)) {
+      return 0;
+    }
+
     // Retention rate score (0-20 points)
     const retentionTarget = 50;
     const retentionScore = Math.min((retentionRate / retentionTarget) * 20, 20);
@@ -307,13 +317,18 @@ export class AlgorithmScorerService {
     // For videos >8 min, target is 8+ min watched
     // For shorter videos, proportional
     const durationTarget = Math.min(videoDuration, 480); // 8 minutes = 480 seconds
-    const durationScore = Math.min((avgViewDuration / durationTarget) * 10, 10);
+    const durationScore = durationTarget > 0
+      ? Math.min((avgViewDuration / durationTarget) * 10, 10)
+      : 0;
 
     // First 15 seconds critical score (0-5 points)
     const first15Target = 80;
     const first15Score = Math.min((retention15s / first15Target) * 5, 5);
 
-    return Math.max(0, retentionScore + durationScore + first15Score);
+    const totalScore = retentionScore + durationScore + first15Score;
+
+    // Ensure we never return NaN
+    return isNaN(totalScore) ? 0 : Math.max(0, totalScore);
   }
 
   /**
@@ -338,7 +353,7 @@ export class AlgorithmScorerService {
     }
 
     // Bonus for subscriber conversion
-    if (video.subscribersGained > 0) {
+    if (video.subscribersGained > 0 && video.views > 0) {
       const subConversionRate = video.subscribersGained / (video.views / 1000);
       if (subConversionRate > 2) {
         // >2 subs per 1000 views
@@ -346,7 +361,8 @@ export class AlgorithmScorerService {
       }
     }
 
-    return Math.max(0, score);
+    // Ensure we never return NaN
+    return isNaN(score) ? 0 : Math.max(0, score);
   }
 
   /**
@@ -371,7 +387,7 @@ export class AlgorithmScorerService {
     }
 
     // Negative signals penalty
-    if (negativeSignalRate !== undefined) {
+    if (negativeSignalRate !== undefined && !isNaN(negativeSignalRate)) {
       // Each 1% of negative signals reduces score
       // Target: <10% negative signals
       if (negativeSignalRate > 10) {
@@ -380,7 +396,8 @@ export class AlgorithmScorerService {
       }
     }
 
-    return Math.max(0, Math.min(score, 15));
+    // Ensure we never return NaN
+    return isNaN(score) ? 0 : Math.max(0, Math.min(score, 15));
   }
 
   /**

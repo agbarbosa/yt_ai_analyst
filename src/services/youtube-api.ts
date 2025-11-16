@@ -29,26 +29,42 @@ export class YouTubeAPIService {
 
   /**
    * Fetch channel details and statistics
+   * Supports both channel IDs and handles (e.g., @LinusTechTips)
    */
-  public async getChannelData(channelId: string): Promise<Partial<Channel>> {
+  public async getChannelData(channelIdentifier: string): Promise<Partial<Channel>> {
     try {
-      const response = await this.youtube.channels.list({
+      // Determine if input is a handle or channel ID
+      const isHandle = channelIdentifier.startsWith('@');
+
+      // Build request parameters based on identifier type
+      const requestParams: any = {
         part: ['snippet', 'statistics', 'contentDetails'],
-        id: [channelId],
-      });
+      };
+
+      if (isHandle) {
+        // Remove @ symbol for the API call
+        requestParams.forHandle = channelIdentifier.substring(1);
+        logger.info('Fetching channel by handle', { handle: channelIdentifier });
+      } else {
+        requestParams.id = [channelIdentifier];
+        logger.info('Fetching channel by ID', { channelId: channelIdentifier });
+      }
+
+      const response = await this.youtube.channels.list(requestParams);
 
       if (!response.data.items || response.data.items.length === 0) {
-        throw new Error(`Channel not found: ${channelId}`);
+        throw new Error(`Channel not found: ${channelIdentifier}`);
       }
 
       const channel = response.data.items[0];
       const snippet = channel.snippet;
       const statistics = channel.statistics;
+      const actualChannelId = channel.id || channelIdentifier;
 
-      logYouTubeAPI('getChannelData', channelId, true);
+      logYouTubeAPI('getChannelData', channelIdentifier, true);
 
       return {
-        channelId,
+        channelId: actualChannelId,
         title: snippet?.title || '',
         description: snippet?.description || '',
         customUrl: snippet?.customUrl || '',
@@ -60,35 +76,47 @@ export class YouTubeAPIService {
         lastUpdated: new Date(),
       };
     } catch (error) {
-      logYouTubeAPI('getChannelData', channelId, false);
-      logger.error('Failed to fetch channel data', { channelId, error });
+      logYouTubeAPI('getChannelData', channelIdentifier, false);
+      logger.error('Failed to fetch channel data', { channelIdentifier, error });
       throw error;
     }
   }
 
   /**
    * Fetch all videos from a channel
+   * Supports both channel IDs and handles (e.g., @LinusTechTips)
    */
   public async getChannelVideos(
-    channelId: string,
+    channelIdentifier: string,
     maxResults: number = 50
   ): Promise<string[]> {
     try {
-      // Get uploads playlist ID
-      const channelResponse = await this.youtube.channels.list({
+      // Determine if input is a handle or channel ID
+      const isHandle = channelIdentifier.startsWith('@');
+
+      // Build request parameters based on identifier type
+      const requestParams: any = {
         part: ['contentDetails'],
-        id: [channelId],
-      });
+      };
+
+      if (isHandle) {
+        requestParams.forHandle = channelIdentifier.substring(1);
+      } else {
+        requestParams.id = [channelIdentifier];
+      }
+
+      // Get uploads playlist ID
+      const channelResponse = await this.youtube.channels.list(requestParams);
 
       if (!channelResponse.data.items || channelResponse.data.items.length === 0) {
-        throw new Error(`Channel not found: ${channelId}`);
+        throw new Error(`Channel not found: ${channelIdentifier}`);
       }
 
       const uploadsPlaylistId =
         channelResponse.data.items[0].contentDetails?.relatedPlaylists?.uploads;
 
       if (!uploadsPlaylistId) {
-        throw new Error(`No uploads playlist found for channel: ${channelId}`);
+        throw new Error(`No uploads playlist found for channel: ${channelIdentifier}`);
       }
 
       // Fetch videos from uploads playlist
@@ -115,13 +143,13 @@ export class YouTubeAPIService {
         pageToken = playlistResponse.data.nextPageToken || undefined;
       } while (pageToken && videoIds.length < maxResults);
 
-      logYouTubeAPI('getChannelVideos', channelId, true);
-      logger.info('Fetched channel videos', { channelId, count: videoIds.length });
+      logYouTubeAPI('getChannelVideos', channelIdentifier, true);
+      logger.info('Fetched channel videos', { channelIdentifier, count: videoIds.length });
 
       return videoIds;
     } catch (error) {
-      logYouTubeAPI('getChannelVideos', channelId, false);
-      logger.error('Failed to fetch channel videos', { channelId, error });
+      logYouTubeAPI('getChannelVideos', channelIdentifier, false);
+      logger.error('Failed to fetch channel videos', { channelIdentifier, error });
       throw error;
     }
   }
