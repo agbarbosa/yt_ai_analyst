@@ -144,53 +144,6 @@ export const CHANNEL_STRATEGY_PROMPT = `{{systemPrompt}}
 
 Generate a comprehensive 90-day channel optimization strategy with 8-12 prioritized recommendations.
 
-## OUTPUT FORMAT
-
-For each recommendation, provide:
-
-### 1. CATEGORY
-Choose from: Title Optimization, Thumbnail Improvement, Content Structure, Engagement Tactics, SEO Keywords, Upload Schedule, Shorts Strategy, Audience Targeting, Retention Improvement, CTA Optimization, Topic Selection, Collaboration
-
-### 2. PRIORITY
-- **Critical**: Major issue blocking growth (fix in 0-7 days)
-- **High**: Significant opportunity (address in 1-2 weeks)
-- **Medium**: Noticeable improvement (implement in 2-4 weeks)
-- **Low**: Nice-to-have optimization (consider in 1-2 months)
-
-### 3. CURRENT ISSUE
-Explain what's wrong or what opportunity exists. Reference specific data points.
-
-### 4. SPECIFIC ACTION ITEMS
-Provide 3-5 step-by-step actions with:
-- Clear instructions
-- Effort level (Low/Medium/High)
-- Timeline (e.g., "5 minutes", "1 hour", "1 week")
-- Numbered steps
-
-### 5. EXPECTED IMPACT
-Specify:
-- Which metric will improve (CTR, Retention, Engagement, etc.)
-- Current value
-- Projected value after implementation
-- Percentage improvement
-- Timeframe for results
-- Confidence level (Low/Medium/High)
-
-### 6. REASONING
-Explain WHY this will work. Reference:
-- YouTube algorithm principles
-- Industry benchmarks
-- Similar successful cases
-- Psychological principles (if applicable)
-
-### 7. SUCCESS METRICS
-Define how to measure if this recommendation worked:
-- Specific KPIs to track
-- How to track them
-- What success looks like
-
----
-
 ## STRATEGIC PRIORITIES
 
 Focus on:
@@ -210,7 +163,143 @@ Focus on:
 
 ---
 
-Generate your comprehensive strategy now:`;
+## OUTPUT FORMAT: JSON
+
+**CRITICAL**: You MUST return ONLY a valid JSON object. No markdown code blocks, no explanatory text, no formatting. Just raw JSON.
+
+Return a JSON object following this EXACT schema:
+
+{
+  "recommendations": [
+    {
+      "actionItemNumber": 1,
+      "category": "Title Optimization",
+      "summary": "Brief action statement (max 150 characters)",
+      "detailedDescription": "Comprehensive explanation with specific data points, step-by-step guidance, and clear instructions",
+      "effortLevel": "Low" | "Medium" | "High",
+      "timeline": {
+        "implementation": "Time to implement (e.g., '3 days', '1-2 weeks')",
+        "resultsTimeframe": "When to expect results (e.g., '1-2 weeks', '1 month')"
+      },
+      "projectValue": 85,
+      "successMetric": {
+        "metric": "CTR",
+        "currentValue": 3.2,
+        "targetValue": 5.5,
+        "measurementMethod": "YouTube Analytics > Reach > CTR",
+        "confidenceLevel": "Low" | "Medium" | "High"
+      },
+      "priority": "Critical" | "High" | "Medium" | "Low",
+      "reasoning": "Why this recommendation will work, referencing YouTube algorithm principles, benchmarks, and psychology"
+    }
+  ]
+}
+
+### FIELD REQUIREMENTS:
+
+**actionItemNumber**: Sequential integer starting from 1
+
+**category**: Must be ONE of these exact values:
+- "Title Optimization"
+- "Thumbnail Improvement"
+- "Content Structure"
+- "Engagement Tactics"
+- "SEO Keywords"
+- "Upload Schedule"
+- "Shorts Strategy"
+- "Audience Targeting"
+- "Retention Improvement"
+- "CTA Optimization"
+- "Topic Selection"
+- "Collaboration"
+
+**summary**:
+- Maximum 150 characters
+- Concise action statement
+- Should clearly communicate the main action
+- Example: "Redesign thumbnails with high-contrast text and emotional faces to boost CTR"
+
+**detailedDescription**:
+- Comprehensive explanation (3-5 paragraphs)
+- Reference specific data points from the channel analysis
+- Provide 3-5 numbered action items with clear instructions
+- Include examples where helpful
+- Explain the current issue/opportunity
+
+**effortLevel**: "Low", "Medium", or "High"
+- Low: <5 hours total work
+- Medium: 1-3 days of work
+- High: >3 days or ongoing effort
+
+**timeline.implementation**: How long to implement (e.g., "2 days", "1-2 weeks", "1 month")
+
+**timeline.resultsTimeframe**: When to expect measurable results (e.g., "1-2 weeks", "1-2 months")
+
+**projectValue**: Integer 0-100 representing importance percentage for achieving overall channel goals
+
+**successMetric.metric**: The primary metric that will improve (e.g., "CTR", "Average View Duration", "Engagement Rate")
+
+**successMetric.currentValue**: Current numeric value of the metric (use data from analysis above)
+
+**successMetric.targetValue**: Realistic target value after implementation
+
+**successMetric.measurementMethod**: Specific location/method to track (e.g., "YouTube Analytics > Engagement > Likes per view")
+
+**successMetric.confidenceLevel**: "Low", "Medium", or "High" based on prediction certainty
+
+**priority**:
+- "Critical": Major issue blocking growth (fix in 0-7 days)
+- "High": Significant opportunity (address in 1-2 weeks)
+- "Medium": Noticeable improvement (implement in 2-4 weeks)
+- "Low": Nice-to-have optimization (consider in 1-2 months)
+
+**reasoning**:
+- Explain WHY this will work
+- Reference YouTube algorithm principles (CTR, watch time, engagement, satisfaction)
+- Cite industry benchmarks
+- Mention psychological principles if applicable
+- Connect to specific channel data
+
+---
+
+## EXAMPLE OUTPUT:
+
+{
+  "recommendations": [
+    {
+      "actionItemNumber": 1,
+      "category": "Title Optimization",
+      "summary": "Implement curiosity gap formula in titles to increase CTR by addressing current weak hook structure",
+      "detailedDescription": "Current titles are descriptive but lack emotional triggers and curiosity gaps, resulting in a CTR of {{avgCTR}}% ({{ctrGap}}% below benchmark). Analysis shows top-performing videos used pattern-interrupt words and specific numbers. Implement this 3-step formula: [Power Word/Number] + [Specific Topic] + [Benefit/Result]. Examples: Transform 'How to Edit Videos' → 'The 5-Minute Edit That Doubled My Views'. Action items: 1) Audit last 10 titles and identify missing elements (30 min). 2) Create template library with 20+ proven formulas from your niche (2 hours). 3) A/B test 3 title variations on next video using YouTube's test feature (ongoing). 4) Implement winning formula across future uploads (5 min per video). Focus on titles 50-70 characters for full display on mobile.",
+      "effortLevel": "Medium",
+      "timeline": {
+        "implementation": "3-5 days",
+        "resultsTimeframe": "2-3 weeks"
+      },
+      "projectValue": 90,
+      "successMetric": {
+        "metric": "CTR",
+        "currentValue": {{avgCTR}},
+        "targetValue": {{ctrBenchmark}},
+        "measurementMethod": "YouTube Analytics > Reach > Impressions CTR",
+        "confidenceLevel": "High"
+      },
+      "priority": "High",
+      "reasoning": "CTR contributes 25% to algorithm score and is currently {{ctrGap}}% below benchmark. Titles are the first decision point for viewers. Research shows curiosity gaps increase CTR by 30-50% because they create information gaps that the brain seeks to close (Loewenstein's Information Gap Theory). Your top 5 videos average {{topCTR}}% CTR, proving your audience responds to stronger hooks. This is a high-leverage fix with immediate impact on impressions and reach."
+    }
+  ]
+}
+
+**IMPORTANT REMINDERS**:
+- Generate 8-12 recommendations
+- Return ONLY valid JSON (no markdown, no code blocks, no extra text)
+- Use actual data values from the analysis above (replace {{variables}} with real numbers)
+- Ensure summary field is ≤150 characters
+- All numeric values must be numbers, not strings
+- Use double quotes for all strings
+- Validate JSON structure before returning
+
+Generate your JSON response now:`;
 
 // ============================================================================
 // VIDEO-LEVEL PROMPTS

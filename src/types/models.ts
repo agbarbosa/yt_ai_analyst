@@ -205,6 +205,7 @@ export interface Recommendation {
   reasoning: string; // Why this recommendation was made
   prompt: string; // The prompt used to generate this (for debugging/improvement)
   confidence: number; // 0-1, how confident the AI is
+  projectValue?: number; // 0-100, importance percentage for achieving overall goals
 
   // Implementation Tracking
   status: RecommendationStatus;
@@ -274,6 +275,7 @@ export interface ImpactEstimate {
   improvement: number; // Percentage improvement
   confidence: number; // 0-1
   timeframe: string; // e.g., "1-2 weeks", "1 month"
+  measurementMethod?: string; // How to track this metric (e.g., "YouTube Analytics > Reach > CTR")
 }
 
 export interface ActualImpact {

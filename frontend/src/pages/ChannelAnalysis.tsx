@@ -12,10 +12,12 @@ import {
   GrowthInsightsTab,
   QuickActionsPanel,
 } from '../components/channel';
+import { AIRecommendationsTable } from '../components/channel/AIRecommendationsTable';
 import type { ChannelAnalysisData } from '../types';
 import { API_BASE_URL } from '../config/constants';
 
 type TabType = 'overview' | 'keywords' | 'performance' | 'videos' | 'growth';
+type RecommendationViewType = 'table' | 'cards';
 
 export function ChannelAnalysis() {
   const [searchParams] = useSearchParams();
@@ -28,6 +30,7 @@ export function ChannelAnalysis() {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [algorithmScore, setAlgorithmScore] = useState<any | null>(null);
   const [isGeneratingRecommendations, setIsGeneratingRecommendations] = useState(false);
+  const [recommendationView, setRecommendationView] = useState<RecommendationViewType>('table');
 
   // Check for URL parameter on mount and auto-analyze
   useEffect(() => {
@@ -257,12 +260,49 @@ export function ChannelAnalysis() {
               <AlgorithmScore score={algorithmScore} />
             )}
 
-            {/* AI Recommendations Panel */}
+            {/* AI Recommendations Section */}
             {recommendations.length > 0 && (
-              <AIRecommendationsPanel
-                recommendations={recommendations}
-                isLoading={isGeneratingRecommendations}
-              />
+              <div className="space-y-4">
+                {/* View Toggle */}
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold text-gray-900">AI-Generated Channel Strategy</h2>
+                  <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+                    <button
+                      onClick={() => setRecommendationView('table')}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        recommendationView === 'table'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      📊 Table View
+                    </button>
+                    <button
+                      onClick={() => setRecommendationView('cards')}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        recommendationView === 'cards'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      🗂️ Card View
+                    </button>
+                  </div>
+                </div>
+
+                {/* Conditional Render Based on View Type */}
+                {recommendationView === 'table' ? (
+                  <AIRecommendationsTable
+                    recommendations={recommendations}
+                    isLoading={isGeneratingRecommendations}
+                  />
+                ) : (
+                  <AIRecommendationsPanel
+                    recommendations={recommendations}
+                    isLoading={isGeneratingRecommendations}
+                  />
+                )}
+              </div>
             )}
 
             {/* Insights Tabs */}
