@@ -280,72 +280,15 @@ export function ChannelAnalysis() {
         {channelData && !isLoading && (
           <>
             {/* Channel Overview */}
-            <ChannelOverview
-              channel={channelData.channel}
-              totalVideos={channelData.totalVideos}
-            />
-
-            {/* Quick Actions Panel */}
-            <QuickActionsPanel
-              channelId={channelData.channel.id}
-              channelTitle={channelData.channel.title}
-              onGenerateRecommendations={generateRecommendations}
-              isGenerating={isGeneratingRecommendations}
-              lastSnapshotTimestamp={lastSnapshotTimestamp}
-            />
-
-            {/* Algorithm Score */}
-            {algorithmScore && (
-              <AlgorithmScore score={algorithmScore} />
-            )}
-
-            {/* AI Recommendations Section */}
-            {recommendations.length > 0 && (
-              <div className="space-y-4">
-                {/* View Toggle */}
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold text-gray-900">AI-Generated Channel Strategy</h2>
-                  <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
-                    <button
-                      onClick={() => setRecommendationView('table')}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        recommendationView === 'table'
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      📊 Table View
-                    </button>
-                    <button
-                      onClick={() => setRecommendationView('cards')}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        recommendationView === 'cards'
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      🗂️ Card View
-                    </button>
-                  </div>
-                </div>
-
-                {/* Conditional Render Based on View Type */}
-                {recommendationView === 'table' ? (
-                  <AIRecommendationsTable
-                    recommendations={recommendations}
-                    isLoading={isGeneratingRecommendations}
-                  />
-                ) : (
-                  <AIRecommendationsPanel
-                    recommendations={recommendations}
-                    isLoading={isGeneratingRecommendations}
-                  />
-                )}
-              </div>
-            )}
+            <div className="mb-8">
+              <ChannelOverview
+                channel={channelData.channel}
+                totalVideos={channelData.totalVideos}
+              />
+            </div>
 
             {/* Insights Tabs */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
               {/* Tab Navigation */}
               <div className="flex bg-gray-100 border-b-2 border-gray-300">
                 <button
@@ -427,6 +370,65 @@ export function ChannelAnalysis() {
                 />
               )}
             </div>
+
+            {/* Quick Actions Panel */}
+            <QuickActionsPanel
+              channelId={channelData.channel.id}
+              channelTitle={channelData.channel.title}
+              onGenerateRecommendations={generateRecommendations}
+              isGenerating={isGeneratingRecommendations}
+              lastSnapshotTimestamp={lastSnapshotTimestamp}
+            />
+
+            {/* Algorithm Score */}
+            {algorithmScore && (
+              <AlgorithmScore score={algorithmScore} />
+            )}
+
+            {/* AI Recommendations Section */}
+            {recommendations.length > 0 && (
+              <div className="space-y-4">
+                {/* View Toggle */}
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold text-white">AI-Generated Channel Strategy</h2>
+                  <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+                    <button
+                      onClick={() => setRecommendationView('table')}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        recommendationView === 'table'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      📊 Table View
+                    </button>
+                    <button
+                      onClick={() => setRecommendationView('cards')}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        recommendationView === 'cards'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      🗂️ Card View
+                    </button>
+                  </div>
+                </div>
+
+                {/* Conditional Render Based on View Type */}
+                {recommendationView === 'table' ? (
+                  <AIRecommendationsTable
+                    recommendations={recommendations}
+                    isLoading={isGeneratingRecommendations}
+                  />
+                ) : (
+                  <AIRecommendationsPanel
+                    recommendations={recommendations}
+                    isLoading={isGeneratingRecommendations}
+                  />
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
