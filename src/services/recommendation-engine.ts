@@ -6,11 +6,15 @@
 import {
   Recommendation,
   RecommendationCategory,
+  RecommendationPriority,
   Video,
   Channel,
   AlgorithmScore,
   PerformanceGap,
   AIModel,
+  ActionItem,
+  EffortLevel,
+  ImpactEstimate,
 } from '../types/models';
 import { aiService } from './ai-service';
 import { algorithmScorer } from './algorithm-scorer';
