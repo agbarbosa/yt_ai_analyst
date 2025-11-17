@@ -168,6 +168,7 @@ CREATE TABLE IF NOT EXISTS recommendations (
     reasoning TEXT NOT NULL,
     prompt TEXT,
     confidence DECIMAL(3,2) DEFAULT 0,
+    project_value INTEGER CHECK (project_value >= 0 AND project_value <= 100),
 
     -- Implementation Tracking
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'implemented', 'dismissed', 'expired')),

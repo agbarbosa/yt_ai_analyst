@@ -16,6 +16,7 @@ import { youtubeAPI } from './services/youtube-api';
 import { algorithmScorer } from './services/algorithm-scorer';
 import { recommendationEngine } from './services/recommendation-engine';
 import { db } from './database/postgres';
+import { recommendationsRepository } from './database/recommendations-repository';
 
 // Initialize Express app
 const app: Express = express();
@@ -385,6 +386,15 @@ app.post('/api/channels/:channelId/recommendations', async (req: Request, res: R
       highCount: recommendations.filter(r => r.priority === 'high').length
     });
 
+    // Save recommendations to database
+    try {
+      await recommendationsRepository.saveRecommendations(recommendations);
+      logger.info('Recommendations saved to database', { channelId, count: recommendations.length });
+    } catch (dbError) {
+      logger.error('Failed to save recommendations to database', { channelId, error: dbError });
+      // Continue even if DB save fails - still return recommendations
+    }
+
     res.json({
       recommendations,
       algorithmScore,
@@ -399,6 +409,142 @@ app.post('/api/channels/:channelId/recommendations', async (req: Request, res: R
     logger.error('Channel recommendation generation failed', { error });
     res.status(500).json({
       error: 'Failed to generate channel recommendations',
+      message: (error as Error).message,
+    });
+  }
+});
+
+/**
+ * GET /api/channels/:channelId/recommendations
+ * Get saved recommendations for a channel
+ */
+app.get('/api/channels/:channelId/recommendations', async (req: Request, res: Response) => {
+  try {
+    const { channelId } = req.params;
+    const { latest } = req.query;
+
+    logger.info('Fetching recommendations from database', { channelId, latest });
+
+    if (latest === 'true') {
+      // Get only the latest snapshot
+      const snapshot = await recommendationsRepository.getLatestSnapshot(channelId, 'channel');
+
+      if (!snapshot) {
+        return res.json({
+          recommendations: [],
+          generatedAt: null,
+          totalCount: 0,
+        });
+      }
+
+      res.json({
+        recommendations: snapshot.recommendations,
+        generatedAt: snapshot.generatedAt.toISOString(),
+        totalCount: snapshot.recommendations.length,
+        criticalCount: snapshot.recommendations.filter(r => r.priority === 'critical').length,
+        highCount: snapshot.recommendations.filter(r => r.priority === 'high').length,
+      });
+    } else {
+      // Get all recommendations
+      const recommendations = await recommendationsRepository.getRecommendationsByTarget(channelId, 'channel');
+
+      res.json({
+        recommendations,
+        totalCount: recommendations.length,
+      });
+    }
+
+    logger.info('Recommendations retrieved successfully', { channelId });
+  } catch (error) {
+    logger.error('Failed to retrieve recommendations', { error });
+    res.status(500).json({
+      error: 'Failed to retrieve recommendations',
+      message: (error as Error).message,
+    });
+  }
+});
+
+/**
+ * PATCH /api/recommendations/:id/status
+ * Update recommendation status
+ */
+app.patch('/api/recommendations/:id/status', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status, notes } = req.body;
+
+    if (!status) {
+      return res.status(400).json({
+        error: 'Status is required',
+      });
+    }
+
+    logger.info('Updating recommendation status', { id, status });
+
+    await recommendationsRepository.updateStatus(id, status, notes);
+
+    res.json({
+      success: true,
+      message: 'Recommendation status updated successfully',
+    });
+
+    logger.info('Recommendation status updated successfully', { id, status });
+  } catch (error) {
+    logger.error('Failed to update recommendation status', { error });
+    res.status(500).json({
+      error: 'Failed to update recommendation status',
+      message: (error as Error).message,
+    });
+  }
+});
+
+/**
+ * PATCH /api/recommendations/:id/feedback
+ * Add user feedback to recommendation
+ */
+app.patch('/api/recommendations/:id/feedback', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { rating, feedback, helpful } = req.body;
+
+    logger.info('Adding recommendation feedback', { id, rating, helpful });
+
+    await recommendationsRepository.addFeedback(id, rating, feedback, helpful);
+
+    res.json({
+      success: true,
+      message: 'Feedback added successfully',
+    });
+
+    logger.info('Feedback added successfully', { id });
+  } catch (error) {
+    logger.error('Failed to add feedback', { error });
+    res.status(500).json({
+      error: 'Failed to add feedback',
+      message: (error as Error).message,
+    });
+  }
+});
+
+/**
+ * GET /api/channels/:channelId/recommendations/stats
+ * Get recommendation statistics
+ */
+app.get('/api/channels/:channelId/recommendations/stats', async (req: Request, res: Response) => {
+  try {
+    const { channelId } = req.params;
+
+    logger.info('Fetching recommendation stats', { channelId });
+
+    const stats = await recommendationsRepository.getStats(channelId, 'channel');
+
+    res.json(stats);
+
+    logger.info('Recommendation stats retrieved successfully', { channelId });
+  } catch (error) {
+    logger.error('Failed to get recommendation stats', { error });
+    res.status(500).json({
+      error: 'Failed to get recommendation stats',
       message: (error as Error).message,
     });
   }

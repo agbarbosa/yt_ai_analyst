@@ -31,6 +31,7 @@ export function ChannelAnalysis() {
   const [algorithmScore, setAlgorithmScore] = useState<any | null>(null);
   const [isGeneratingRecommendations, setIsGeneratingRecommendations] = useState(false);
   const [recommendationView, setRecommendationView] = useState<RecommendationViewType>('table');
+  const [lastSnapshotTimestamp, setLastSnapshotTimestamp] = useState<string | null>(null);
 
   // Check for URL parameter on mount and auto-analyze
   useEffect(() => {
@@ -99,6 +100,9 @@ export function ChannelAnalysis() {
         totalVideos: result.data.totalVideos
       });
       setChannelData(result.data);
+
+      // Fetch existing recommendations from database
+      await fetchExistingRecommendations(result.data.channel.id);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       console.error('[ChannelAnalysis] Analysis failed with error:', errorMessage, err);
@@ -120,6 +124,35 @@ export function ChannelAnalysis() {
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       analyzeChannel();
+    }
+  };
+
+  const fetchExistingRecommendations = async (channelId: string) => {
+    try {
+      const apiUrl = `${API_BASE_URL}/api/channels/${channelId}/recommendations?latest=true`;
+      console.log('[ChannelAnalysis] Fetching existing recommendations:', apiUrl);
+
+      const response = await fetch(apiUrl);
+
+      if (!response.ok) {
+        console.warn('[ChannelAnalysis] Failed to fetch existing recommendations');
+        return;
+      }
+
+      const result = await response.json();
+      console.log('[ChannelAnalysis] Existing recommendations fetched', {
+        count: result.recommendations?.length || 0,
+        generatedAt: result.generatedAt
+      });
+
+      if (result.recommendations && result.recommendations.length > 0) {
+        setRecommendations(result.recommendations);
+        setLastSnapshotTimestamp(result.generatedAt);
+        console.log('[ChannelAnalysis] Loaded existing recommendations from database');
+      }
+    } catch (err) {
+      console.warn('[ChannelAnalysis] Error fetching existing recommendations:', err);
+      // Silently fail - not critical
     }
   };
 
@@ -167,6 +200,7 @@ export function ChannelAnalysis() {
 
       setRecommendations(result.recommendations || []);
       setAlgorithmScore(result.algorithmScore || null);
+      setLastSnapshotTimestamp(result.generatedAt || new Date().toISOString());
 
       console.log('[ChannelAnalysis] Recommendations state updated successfully');
     } catch (err) {
@@ -253,6 +287,7 @@ export function ChannelAnalysis() {
               channelTitle={channelData.channel.title}
               onGenerateRecommendations={generateRecommendations}
               isGenerating={isGeneratingRecommendations}
+              lastSnapshotTimestamp={lastSnapshotTimestamp}
             />
 
             {/* Algorithm Score */}
