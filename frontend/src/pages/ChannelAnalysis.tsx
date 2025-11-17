@@ -390,7 +390,7 @@ export function ChannelAnalysis() {
               <div className="space-y-4">
                 {/* View Toggle */}
                 <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold text-gray-900">AI-Generated Channel Strategy</h2>
+                  <h2 className="text-2xl font-bold text-white">AI-Generated Channel Strategy</h2>
                   <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
                     <button
                       onClick={() => setRecommendationView('table')}
