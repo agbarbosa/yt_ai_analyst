@@ -12,10 +12,12 @@ import {
   GrowthInsightsTab,
   QuickActionsPanel,
 } from '../components/channel';
+import { AIRecommendationsTable } from '../components/channel/AIRecommendationsTable';
 import type { ChannelAnalysisData } from '../types';
 import { API_BASE_URL } from '../config/constants';
 
 type TabType = 'overview' | 'keywords' | 'performance' | 'videos' | 'growth';
+type RecommendationViewType = 'table' | 'cards';
 
 export function ChannelAnalysis() {
   const [searchParams] = useSearchParams();
@@ -28,6 +30,8 @@ export function ChannelAnalysis() {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [algorithmScore, setAlgorithmScore] = useState<any | null>(null);
   const [isGeneratingRecommendations, setIsGeneratingRecommendations] = useState(false);
+  const [recommendationView, setRecommendationView] = useState<RecommendationViewType>('table');
+  const [lastSnapshotTimestamp, setLastSnapshotTimestamp] = useState<string | null>(null);
 
   // Check for URL parameter on mount and auto-analyze
   useEffect(() => {
@@ -96,6 +100,9 @@ export function ChannelAnalysis() {
         totalVideos: result.data.totalVideos
       });
       setChannelData(result.data);
+
+      // Fetch existing recommendations from database
+      await fetchExistingRecommendations(result.data.channel.id);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       console.error('[ChannelAnalysis] Analysis failed with error:', errorMessage, err);
@@ -117,6 +124,39 @@ export function ChannelAnalysis() {
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       analyzeChannel();
+    }
+  };
+
+  const fetchExistingRecommendations = async (channelId: string) => {
+    try {
+      const apiUrl = `${API_BASE_URL}/api/channels/${channelId}/recommendations?latest=true`;
+      console.log('[ChannelAnalysis] Fetching existing recommendations:', apiUrl);
+
+      const response = await fetch(apiUrl);
+
+      if (!response.ok) {
+        console.warn('[ChannelAnalysis] Failed to fetch existing recommendations');
+        return;
+      }
+
+      const result = await response.json();
+      console.log('[ChannelAnalysis] Existing recommendations fetched', {
+        count: result.recommendations?.length || 0,
+        generatedAt: result.generatedAt,
+        hasAlgorithmScore: !!result.algorithmScore
+      });
+
+      if (result.recommendations && result.recommendations.length > 0) {
+        setRecommendations(result.recommendations);
+        setLastSnapshotTimestamp(result.generatedAt);
+        if (result.algorithmScore) {
+          setAlgorithmScore(result.algorithmScore);
+        }
+        console.log('[ChannelAnalysis] Loaded existing recommendations and algorithm score from database');
+      }
+    } catch (err) {
+      console.warn('[ChannelAnalysis] Error fetching existing recommendations:', err);
+      // Silently fail - not critical
     }
   };
 
@@ -164,6 +204,7 @@ export function ChannelAnalysis() {
 
       setRecommendations(result.recommendations || []);
       setAlgorithmScore(result.algorithmScore || null);
+      setLastSnapshotTimestamp(result.generatedAt || new Date().toISOString());
 
       console.log('[ChannelAnalysis] Recommendations state updated successfully');
     } catch (err) {
@@ -250,6 +291,7 @@ export function ChannelAnalysis() {
               channelTitle={channelData.channel.title}
               onGenerateRecommendations={generateRecommendations}
               isGenerating={isGeneratingRecommendations}
+              lastSnapshotTimestamp={lastSnapshotTimestamp}
             />
 
             {/* Algorithm Score */}
@@ -257,12 +299,49 @@ export function ChannelAnalysis() {
               <AlgorithmScore score={algorithmScore} />
             )}
 
-            {/* AI Recommendations Panel */}
+            {/* AI Recommendations Section */}
             {recommendations.length > 0 && (
-              <AIRecommendationsPanel
-                recommendations={recommendations}
-                isLoading={isGeneratingRecommendations}
-              />
+              <div className="space-y-4">
+                {/* View Toggle */}
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold text-gray-900">AI-Generated Channel Strategy</h2>
+                  <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+                    <button
+                      onClick={() => setRecommendationView('table')}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        recommendationView === 'table'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      📊 Table View
+                    </button>
+                    <button
+                      onClick={() => setRecommendationView('cards')}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        recommendationView === 'cards'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      🗂️ Card View
+                    </button>
+                  </div>
+                </div>
+
+                {/* Conditional Render Based on View Type */}
+                {recommendationView === 'table' ? (
+                  <AIRecommendationsTable
+                    recommendations={recommendations}
+                    isLoading={isGeneratingRecommendations}
+                  />
+                ) : (
+                  <AIRecommendationsPanel
+                    recommendations={recommendations}
+                    isLoading={isGeneratingRecommendations}
+                  />
+                )}
+              </div>
             )}
 
             {/* Insights Tabs */}

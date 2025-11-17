@@ -17,6 +17,7 @@ interface ImpactEstimate {
   improvement: number;
   confidence: number;
   timeframe: string;
+  measurementMethod?: string;
 }
 
 interface Recommendation {
@@ -29,6 +30,8 @@ interface Recommendation {
   expectedImpact: ImpactEstimate;
   confidence: number;
   generatedBy: string;
+  projectValue?: number;
+  reasoning?: string;
 }
 
 interface AIRecommendationsPanelProps {

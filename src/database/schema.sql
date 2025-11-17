@@ -145,6 +145,27 @@ CREATE INDEX idx_algorithm_scores_video_id ON algorithm_scores(video_id);
 CREATE INDEX idx_algorithm_scores_overall ON algorithm_scores(overall DESC);
 
 -- ============================================================================
+-- CHANNEL SNAPSHOTS TABLE
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS channel_snapshots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    channel_id VARCHAR(255) NOT NULL,
+
+    -- Algorithm Score (stored as JSONB for flexibility)
+    algorithm_score JSONB NOT NULL,
+
+    -- Snapshot metadata
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+    -- Index for fast lookups
+    UNIQUE(channel_id, created_at)
+);
+
+CREATE INDEX idx_channel_snapshots_channel_id ON channel_snapshots(channel_id);
+CREATE INDEX idx_channel_snapshots_created_at ON channel_snapshots(created_at DESC);
+
+-- ============================================================================
 -- RECOMMENDATIONS TABLE
 -- ============================================================================
 
@@ -168,6 +189,7 @@ CREATE TABLE IF NOT EXISTS recommendations (
     reasoning TEXT NOT NULL,
     prompt TEXT,
     confidence DECIMAL(3,2) DEFAULT 0,
+    project_value INTEGER CHECK (project_value >= 0 AND project_value <= 100),
 
     -- Implementation Tracking
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'implemented', 'dismissed', 'expired')),

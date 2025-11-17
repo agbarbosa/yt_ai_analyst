@@ -6,11 +6,15 @@
 import {
   Recommendation,
   RecommendationCategory,
+  RecommendationPriority,
   Video,
   Channel,
   AlgorithmScore,
   PerformanceGap,
   AIModel,
+  ActionItem,
+  EffortLevel,
+  ImpactEstimate,
 } from '../types/models';
 import { aiService } from './ai-service';
 import { algorithmScorer } from './algorithm-scorer';
@@ -431,8 +435,164 @@ export class RecommendationEngine {
     targetType: 'channel' | 'video',
     model: string
   ): Recommendation[] {
-    // This is a simplified parser
-    // In production, would use structured output or more sophisticated parsing
+    const recommendations: Recommendation[] = [];
+
+    try {
+      // Try JSON parsing first
+      const parsed = JSON.parse(content);
+
+      if (parsed.recommendations && Array.isArray(parsed.recommendations)) {
+        // Process each recommendation from the JSON array
+        for (const rec of parsed.recommendations) {
+          // Map category string to enum format
+          const category = this.mapCategoryToEnum(rec.category);
+
+          // Build action items from detailed description
+          const actionItems = this.extractActionItems(
+            rec.detailedDescription,
+            rec.effortLevel,
+            rec.timeline.implementation
+          );
+
+          // Build expected impact from success metric
+          const expectedImpact: ImpactEstimate = {
+            metric: rec.successMetric.metric,
+            currentValue: rec.successMetric.currentValue,
+            projectedValue: rec.successMetric.targetValue,
+            improvement: this.calculateImprovement(
+              rec.successMetric.currentValue,
+              rec.successMetric.targetValue
+            ),
+            confidence: this.mapConfidenceLevel(rec.successMetric.confidenceLevel),
+            timeframe: rec.timeline.resultsTimeframe,
+            measurementMethod: rec.successMetric.measurementMethod,
+          };
+
+          // Map confidence level to numeric value
+          const confidence = this.mapConfidenceLevel(rec.successMetric.confidenceLevel);
+
+          recommendations.push({
+            id: uuidv4(),
+            targetId,
+            targetType,
+            category,
+            priority: rec.priority.toLowerCase() as RecommendationPriority,
+            title: rec.summary,
+            description: rec.detailedDescription,
+            actionItems,
+            expectedImpact,
+            projectValue: rec.projectValue,
+            generatedBy: model as any,
+            reasoning: rec.reasoning,
+            prompt: '',
+            confidence,
+            status: 'pending',
+            createdAt: new Date(),
+          });
+        }
+
+        console.log(`Successfully parsed ${recommendations.length} recommendations from JSON`);
+        return recommendations;
+      } else {
+        throw new Error('Invalid JSON structure: missing recommendations array');
+      }
+    } catch (error) {
+      // Fallback to markdown parsing for backward compatibility
+      console.warn('JSON parsing failed, using markdown fallback:', error);
+      return this.parseMarkdownRecommendations(content, targetId, targetType, model);
+    }
+  }
+
+  /**
+   * Map category string to enum format
+   */
+  private mapCategoryToEnum(category: string): RecommendationCategory {
+    const categoryMap: Record<string, RecommendationCategory> = {
+      'Title Optimization': 'title_optimization',
+      'Thumbnail Improvement': 'thumbnail_improvement',
+      'Content Structure': 'content_structure',
+      'Engagement Tactics': 'engagement_tactics',
+      'SEO Keywords': 'seo_keywords',
+      'Upload Schedule': 'upload_schedule',
+      'Shorts Strategy': 'shorts_strategy',
+      'Audience Targeting': 'audience_targeting',
+      'Retention Improvement': 'retention_improvement',
+      'CTA Optimization': 'cta_optimization',
+      'Topic Selection': 'topic_selection',
+      'Collaboration': 'collaboration',
+    };
+
+    return categoryMap[category] || 'content_structure';
+  }
+
+  /**
+   * Extract action items from detailed description
+   */
+  private extractActionItems(
+    detailedDescription: string,
+    effortLevel: string,
+    timeline: string
+  ): ActionItem[] {
+    const actionItems: ActionItem[] = [];
+
+    // Try to extract numbered action items from the description
+    const numberedPattern = /\d+\)\s+([^.]+?)(?:\s*\(([^)]+)\))?[.\n]/g;
+    let match;
+    let order = 1;
+
+    while ((match = numberedPattern.exec(detailedDescription)) !== null) {
+      actionItems.push({
+        action: match[1].trim(),
+        details: match[1].trim(),
+        effort: effortLevel.toLowerCase() as EffortLevel,
+        timeline: match[2] || timeline,
+        order: order++,
+      });
+    }
+
+    // If no numbered items found, create a single action item
+    if (actionItems.length === 0) {
+      actionItems.push({
+        action: 'Implement recommendation',
+        details: detailedDescription,
+        effort: effortLevel.toLowerCase() as EffortLevel,
+        timeline,
+        order: 1,
+      });
+    }
+
+    return actionItems;
+  }
+
+  /**
+   * Calculate percentage improvement
+   */
+  private calculateImprovement(currentValue: number, targetValue: number): number {
+    if (currentValue === 0) return 0;
+    return ((targetValue - currentValue) / currentValue) * 100;
+  }
+
+  /**
+   * Map confidence level string to numeric value
+   */
+  private mapConfidenceLevel(confidenceLevel: string): number {
+    const confidenceMap: Record<string, number> = {
+      Low: 0.5,
+      Medium: 0.7,
+      High: 0.9,
+    };
+    return confidenceMap[confidenceLevel] || 0.7;
+  }
+
+  /**
+   * Fallback: Parse markdown recommendations (old format)
+   */
+  private parseMarkdownRecommendations(
+    content: string,
+    targetId: string,
+    targetType: 'channel' | 'video',
+    model: string
+  ): Recommendation[] {
     const recommendations: Recommendation[] = [];
 
     // For now, create a single recommendation with the full AI response
