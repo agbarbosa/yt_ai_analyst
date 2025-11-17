@@ -437,7 +437,7 @@ app.get('/api/channels/:channelId/recommendations', async (req: Request, res: Re
         });
       }
 
-      res.json({
+      return res.json({
         recommendations: snapshot.recommendations,
         generatedAt: snapshot.generatedAt.toISOString(),
         totalCount: snapshot.recommendations.length,
@@ -448,16 +448,14 @@ app.get('/api/channels/:channelId/recommendations', async (req: Request, res: Re
       // Get all recommendations
       const recommendations = await recommendationsRepository.getRecommendationsByTarget(channelId, 'channel');
 
-      res.json({
+      return res.json({
         recommendations,
         totalCount: recommendations.length,
       });
     }
-
-    logger.info('Recommendations retrieved successfully', { channelId });
   } catch (error) {
     logger.error('Failed to retrieve recommendations', { error });
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to retrieve recommendations',
       message: (error as Error).message,
     });
@@ -483,15 +481,15 @@ app.patch('/api/recommendations/:id/status', async (req: Request, res: Response)
 
     await recommendationsRepository.updateStatus(id, status, notes);
 
-    res.json({
+    logger.info('Recommendation status updated successfully', { id, status });
+
+    return res.json({
       success: true,
       message: 'Recommendation status updated successfully',
     });
-
-    logger.info('Recommendation status updated successfully', { id, status });
   } catch (error) {
     logger.error('Failed to update recommendation status', { error });
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to update recommendation status',
       message: (error as Error).message,
     });
@@ -511,15 +509,15 @@ app.patch('/api/recommendations/:id/feedback', async (req: Request, res: Respons
 
     await recommendationsRepository.addFeedback(id, rating, feedback, helpful);
 
-    res.json({
+    logger.info('Feedback added successfully', { id });
+
+    return res.json({
       success: true,
       message: 'Feedback added successfully',
     });
-
-    logger.info('Feedback added successfully', { id });
   } catch (error) {
     logger.error('Failed to add feedback', { error });
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to add feedback',
       message: (error as Error).message,
     });
@@ -538,12 +536,12 @@ app.get('/api/channels/:channelId/recommendations/stats', async (req: Request, r
 
     const stats = await recommendationsRepository.getStats(channelId, 'channel');
 
-    res.json(stats);
-
     logger.info('Recommendation stats retrieved successfully', { channelId });
+
+    return res.json(stats);
   } catch (error) {
     logger.error('Failed to get recommendation stats', { error });
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Failed to get recommendation stats',
       message: (error as Error).message,
     });
