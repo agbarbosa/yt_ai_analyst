@@ -9,6 +9,54 @@ import logger from '../utils/logger';
 
 export class RecommendationsRepository {
   /**
+   * Save algorithm score for a channel snapshot
+   */
+  async saveAlgorithmScore(channelId: string, algorithmScore: any, createdAt: Date): Promise<void> {
+    try {
+      await db.query(
+        `INSERT INTO channel_snapshots (channel_id, algorithm_score, created_at)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (channel_id, created_at) DO UPDATE SET
+           algorithm_score = EXCLUDED.algorithm_score`,
+        [channelId, JSON.stringify(algorithmScore), createdAt]
+      );
+
+      logger.info('Algorithm score saved to database', { channelId });
+    } catch (error) {
+      logger.error('Failed to save algorithm score', { error, channelId });
+      throw error;
+    }
+  }
+
+  /**
+   * Get algorithm score for latest channel snapshot
+   */
+  async getLatestAlgorithmScore(channelId: string): Promise<any | null> {
+    try {
+      const result = await db.query(
+        `SELECT algorithm_score, created_at
+         FROM channel_snapshots
+         WHERE channel_id = $1
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [channelId]
+      );
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return typeof row.algorithm_score === 'string'
+        ? JSON.parse(row.algorithm_score)
+        : row.algorithm_score;
+    } catch (error) {
+      logger.error('Failed to get algorithm score', { error, channelId });
+      throw error;
+    }
+  }
+
+  /**
    * Save recommendations to database
    */
   async saveRecommendations(recommendations: Recommendation[]): Promise<void> {
@@ -89,7 +137,7 @@ export class RecommendationsRepository {
   async getLatestSnapshot(
     targetId: string,
     targetType: 'channel' | 'video'
-  ): Promise<{ recommendations: Recommendation[]; generatedAt: Date } | null> {
+  ): Promise<{ recommendations: Recommendation[]; generatedAt: Date; algorithmScore?: any } | null> {
     try {
       // Get the most recent created_at timestamp
       const latestResult = await db.query(
@@ -114,9 +162,27 @@ export class RecommendationsRepository {
         [targetId, targetType, generatedAt]
       );
 
+      // Get algorithm score for this snapshot (only for channels)
+      let algorithmScore = null;
+      if (targetType === 'channel') {
+        const scoreResult = await db.query(
+          `SELECT algorithm_score FROM channel_snapshots
+           WHERE channel_id = $1 AND created_at = $2
+           LIMIT 1`,
+          [targetId, generatedAt]
+        );
+
+        if (scoreResult.rows.length > 0) {
+          algorithmScore = typeof scoreResult.rows[0].algorithm_score === 'string'
+            ? JSON.parse(scoreResult.rows[0].algorithm_score)
+            : scoreResult.rows[0].algorithm_score;
+        }
+      }
+
       return {
         recommendations: recsResult.rows.map(this.mapRowToRecommendation),
         generatedAt,
+        algorithmScore,
       };
     } catch (error) {
       logger.error('Failed to get latest snapshot', { error, targetId, targetType });

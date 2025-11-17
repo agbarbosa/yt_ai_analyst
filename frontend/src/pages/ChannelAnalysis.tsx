@@ -142,13 +142,17 @@ export function ChannelAnalysis() {
       const result = await response.json();
       console.log('[ChannelAnalysis] Existing recommendations fetched', {
         count: result.recommendations?.length || 0,
-        generatedAt: result.generatedAt
+        generatedAt: result.generatedAt,
+        hasAlgorithmScore: !!result.algorithmScore
       });
 
       if (result.recommendations && result.recommendations.length > 0) {
         setRecommendations(result.recommendations);
         setLastSnapshotTimestamp(result.generatedAt);
-        console.log('[ChannelAnalysis] Loaded existing recommendations from database');
+        if (result.algorithmScore) {
+          setAlgorithmScore(result.algorithmScore);
+        }
+        console.log('[ChannelAnalysis] Loaded existing recommendations and algorithm score from database');
       }
     } catch (err) {
       console.warn('[ChannelAnalysis] Error fetching existing recommendations:', err);

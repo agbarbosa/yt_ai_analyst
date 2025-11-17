@@ -386,10 +386,12 @@ app.post('/api/channels/:channelId/recommendations', async (req: Request, res: R
       highCount: recommendations.filter(r => r.priority === 'high').length
     });
 
-    // Save recommendations to database
+    // Save recommendations and algorithm score to database
+    const generatedAt = new Date();
     try {
       await recommendationsRepository.saveRecommendations(recommendations);
-      logger.info('Recommendations saved to database', { channelId, count: recommendations.length });
+      await recommendationsRepository.saveAlgorithmScore(channelId, algorithmScore, generatedAt);
+      logger.info('Recommendations and algorithm score saved to database', { channelId, count: recommendations.length });
     } catch (dbError) {
       logger.error('Failed to save recommendations to database', { channelId, error: dbError });
       // Continue even if DB save fails - still return recommendations
@@ -401,7 +403,7 @@ app.post('/api/channels/:channelId/recommendations', async (req: Request, res: R
       totalCount: recommendations.length,
       criticalCount: recommendations.filter(r => r.priority === 'critical').length,
       highCount: recommendations.filter(r => r.priority === 'high').length,
-      generatedAt: new Date().toISOString(),
+      generatedAt: generatedAt.toISOString(),
     });
 
     logger.info('Channel recommendations completed successfully', { channelId });
@@ -439,6 +441,7 @@ app.get('/api/channels/:channelId/recommendations', async (req: Request, res: Re
 
       return res.json({
         recommendations: snapshot.recommendations,
+        algorithmScore: snapshot.algorithmScore,
         generatedAt: snapshot.generatedAt.toISOString(),
         totalCount: snapshot.recommendations.length,
         criticalCount: snapshot.recommendations.filter(r => r.priority === 'critical').length,
