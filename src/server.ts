@@ -387,7 +387,8 @@ app.post('/api/channels/:channelId/recommendations', async (req: Request, res: R
     });
 
     // Save recommendations and algorithm score to database
-    const generatedAt = new Date();
+    // Use the timestamp from the first recommendation to ensure consistency
+    const generatedAt = recommendations.length > 0 ? recommendations[0].createdAt : new Date();
     try {
       await recommendationsRepository.saveRecommendations(recommendations);
       await recommendationsRepository.saveAlgorithmScore(channelId, algorithmScore, generatedAt);

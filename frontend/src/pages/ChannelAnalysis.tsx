@@ -61,6 +61,9 @@ export function ChannelAnalysis() {
     setIsLoading(true);
     setError('');
     setChannelData(null);
+    setRecommendations([]);
+    setAlgorithmScore(null);
+    setLastSnapshotTimestamp(null);
 
     const startTime = performance.now();
 
@@ -151,6 +154,9 @@ export function ChannelAnalysis() {
         setLastSnapshotTimestamp(result.generatedAt);
         if (result.algorithmScore) {
           setAlgorithmScore(result.algorithmScore);
+        } else {
+          // Clear stale algorithm score from previous channel
+          setAlgorithmScore(null);
         }
         console.log('[ChannelAnalysis] Loaded existing recommendations and algorithm score from database');
       }
